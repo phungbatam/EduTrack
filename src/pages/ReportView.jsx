@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { FileSpreadsheet, FileDown, Loader2, Trophy, Medal, School, CalendarRange, Lock, Printer, ShieldCheck } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import BarChart from '../components/BarChart.jsx'
+import MonthlySummary from '../components/MonthlySummary.jsx'
 import {
   buildStandings,
   ruleStats,
@@ -233,6 +234,10 @@ export default function ReportView() {
           worstStudent={worstStudent}
         />
 
+        {period.type === 'month' ? (
+          <MonthlySummary year={period.year} month={period.month} />
+        ) : (
+          <>
         <section>
           <SectionTitle>1. Bảng xếp hạng thi đua giữa các Tổ</SectionTitle>
           <div className="overflow-x-auto">
@@ -447,6 +452,8 @@ export default function ReportView() {
               </table>
             </div>
           </section>
+        )}
+          </>
         )}
 
         <p className="border-t border-dashed border-slate-200 pt-4 text-center text-xs text-slate-400">

@@ -10,19 +10,23 @@ import {
   CalendarDays,
   BarChart3,
   Megaphone,
+  ShieldCheck,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
-import { isLeaderRole } from '../utils/helpers.js'
+import { isLeaderRole, isClassLeaderRole } from '../utils/helpers.js'
 
 const ADMIN_NAV = [
   { key: 'dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
   { key: 'students', label: 'Học sinh & Phân tổ', icon: Users },
   { key: 'violations', label: 'Quản lý vi phạm', icon: AlertTriangle },
+  { key: 'approve', label: 'Duyệt vi phạm', icon: ShieldCheck },
   { key: 'rules', label: 'Danh mục lỗi vi phạm', icon: ClipboardList },
   { key: 'reports', label: 'Báo cáo & Xuất dữ liệu', icon: FileText },
 ]
 
 const LEAD_NAV = [{ key: 'lead', label: 'Điều hành của lớp', icon: Megaphone }]
+
+const LEAD_APPROVE_NAV = [{ key: 'approve', label: 'Duyệt vi phạm', icon: ShieldCheck }]
 
 const STUDENT_NAV = [
   { key: 'home', label: 'Trang chủ', icon: LayoutDashboard },
@@ -33,7 +37,14 @@ const STUDENT_NAV = [
 export default function Sidebar({ view, onNavigate, open, onClose }) {
   const { session, isAdmin, logout, resetDemo, notify } = useApp()
   const isLeader = !!session && !isAdmin && isLeaderRole(session.roleLabel)
-  const nav = isAdmin ? ADMIN_NAV : isLeader ? [...LEAD_NAV, ...STUDENT_NAV] : STUDENT_NAV
+  const isClassLeader = !!session && !isAdmin && isClassLeaderRole(session.roleLabel)
+  const nav = isAdmin
+    ? ADMIN_NAV
+    : isLeader
+      ? isClassLeader
+        ? [...LEAD_NAV, ...LEAD_APPROVE_NAV, ...STUDENT_NAV]
+        : [...LEAD_NAV, ...STUDENT_NAV]
+      : STUDENT_NAV
 
   return (
     <>

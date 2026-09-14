@@ -2,7 +2,16 @@ import { useMemo, useState } from 'react'
 import { Pencil, Trash2, CalendarDays, Search, Check, Lock, LockOpen, ShieldCheck } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import Modal from '../components/Modal.jsx'
-import { todayISO, formatDate, weekLabel, isoWeekInfo, availableWeeks, matchesPeriod } from '../utils/helpers.js'
+import {
+  todayISO,
+  formatDate,
+  weekLabel,
+  isoWeekInfo,
+  availableWeeks,
+  matchesPeriod,
+  statusOf,
+  VIOLATION_STATUS,
+} from '../utils/helpers.js'
 
 function ViolationForm({ initial, onSave, onCancel, onError }) {
   const { students, rules, isWeekLocked } = useApp()
@@ -127,11 +136,12 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
 }
 
 export default function ViolationManagement() {
-  const { students, rules, violations, notify, addViolation, updateViolation, deleteViolation, lockWeek, unlockWeek, isWeekLocked } = useApp()
+  const { session, students, rules, violations, notify, addViolation, updateViolation, deleteViolation, lockWeek, unlockWeek, isWeekLocked } = useApp()
 
   const [search, setSearch] = useState('')
   const [weekFilter, setWeekFilter] = useState('current')
   const [ruleFilter, setRuleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [formKey, setFormKey] = useState(0)
@@ -166,6 +176,7 @@ export default function ViolationManagement() {
     return [...violations]
       .filter((v) => matchesPeriod(v.date, period))
       .filter((v) => ruleFilter === 'all' || v.ruleId === ruleFilter)
+      .filter((v) => statusFilter === 'all' || statusOf(v) === statusFilter)
       .filter((v) => {
         if (!q) return true
         const stu = students.find((s) => s.id === v.studentId)
@@ -176,7 +187,7 @@ export default function ViolationManagement() {
         )
       })
       .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-  }, [violations, students, ruleMap, search, ruleFilter, period])
+  }, [violations, students, ruleMap, search, ruleFilter, statusFilter, period])
 
   const totalInPeriod = filtered.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
 
@@ -188,7 +199,14 @@ export default function ViolationManagement() {
   }
 
   const handleSaveNew = (formData) => {
-    addViolation({ ...formData, id: `v-${Date.now()}` })
+    addViolation({
+      ...formData,
+      id: `v-${Date.now()}`,
+      status: 'approved',
+      by: session?.name || 'Giáo viên',
+      byId: session?.id || null,
+      byRole: session?.role === 'admin' ? 'Giáo viên' : null,
+    })
     notify(`Đã ghi nhận vi phạm cho ${students.find((s) => s.id === formData.studentId)?.name || ''}.`)
     setFormKey((k) => k + 1)
   }
@@ -271,6 +289,18 @@ export default function ViolationManagement() {
                 </option>
               ))}
             </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              {Object.values(VIOLATION_STATUS).map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
             {period.type === 'week' &&
               (selectedLocked ? (
                 <div className="flex items-center gap-2">
@@ -311,13 +341,14 @@ export default function ViolationManagement() {
                 <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
                 <th className="px-4 py-3 font-semibold">Điểm</th>
                 <th className="px-4 py-3 font-semibold">Ghi chú</th>
+                <th className="px-4 py-3 font-semibold">Trạng thái</th>
                 <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
                     Không có vi phạm nào trong kỳ này.
                   </td>
                 </tr>
@@ -356,6 +387,15 @@ export default function ViolationManagement() {
                       </span>
                     </td>
                     <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-400">{v.note || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-semibold ${
+                          VIOLATION_STATUS[statusOf(v)].cls
+                        }`}
+                      >
+                        {VIOLATION_STATUS[statusOf(v)].label}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       {lockedRow ? (
                         <div className="flex justify-end text-amber-500" title="Vi phạm thuộc tuần đã chốt">

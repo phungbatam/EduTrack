@@ -27,6 +27,36 @@ export function scopeLabel(scope) {
   return 'Cả lớp'
 }
 
+export const CLASS_LEADER_ROLES = ['Lớp trưởng', 'Lớp phó học tập', 'Lớp phó lao động', 'Lớp phó văn thể mỹ']
+
+export function isClassLeaderRole(roleLabel) {
+  return CLASS_LEADER_ROLES.includes(roleLabel)
+}
+
+export const VIOLATION_STATUS = {
+  draft: { label: 'Chờ gửi', cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+  pendingClass: { label: 'Chờ lớp trưởng duyệt', cls: 'bg-sky-50 text-sky-600 border-sky-200' },
+  pendingAdmin: { label: 'Chờ giáo viên duyệt', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+  approved: { label: 'Đã duyệt', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  rejected: { label: 'Từ chối', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+}
+
+export const VIOLATION_STATUS_ORDER = ['draft', 'pendingClass', 'pendingAdmin', 'approved', 'rejected']
+
+export function statusOf(v) {
+  const s = v && v.status
+  return s && VIOLATION_STATUS[s] ? s : 'approved'
+}
+
+export function scoresIn(v) {
+  const s = statusOf(v)
+  return s !== 'draft' && s !== 'rejected'
+}
+
+export function submitTargetFor(roleLabel) {
+  return isClassLeaderRole(roleLabel) ? 'pendingAdmin' : 'pendingClass'
+}
+
 export const CONDUCT_LEVELS = [
   { label: 'Tốt', min: 90, cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
   { label: 'Khá', min: 80, cls: 'bg-sky-50 text-sky-600 border-sky-200' },
@@ -190,6 +220,7 @@ export function buildStandings(students, rules, violations, period) {
   })
   violations.forEach((v) => {
     if (!v || !cells[v.studentId]) return
+    if (!scoresIn(v)) return
     if (!matchesPeriod(v.date, period)) return
     cells[v.studentId].violations += 1
     const pts = ruleMap[v.ruleId]?.points || 0
@@ -247,6 +278,7 @@ export function ruleStats(violations, rules, period) {
   const ruleMap = Object.fromEntries(rules.map((r) => [r.id, r]))
   const acc = {}
   violations.forEach((v) => {
+    if (!scoresIn(v)) return
     if (!matchesPeriod(v.date, period)) return
     const r = v && ruleMap[v.ruleId]
     if (!r) return
@@ -263,7 +295,7 @@ export function weeklyTrend(violations, n = 8) {
     d.setDate(d.getDate() - 7 * i)
     const info = getWeekInfo(d)
     const count = violations.filter(
-      (v) => v && v.date && matchesPeriod(v.date, { type: 'week', year: info.year, week: info.week }),
+      (v) => v && v.date && scoresIn(v) && matchesPeriod(v.date, { type: 'week', year: info.year, week: info.week }),
     ).length
     out.push({ year: info.year, week: info.week, label: `T${info.week}`, count })
   }

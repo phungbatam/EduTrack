@@ -1,31 +1,26 @@
 import { useMemo, useState } from 'react'
-import { CalendarRange, Lock, Award, TrendingUp, AlertTriangle } from 'lucide-react'
+import { CalendarRange, Award } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
+import MonthlySummary from '../components/MonthlySummary.jsx'
 import {
   buildStandings,
   conductOf,
   currentMonth,
   availableMonths,
-  weeksInMonth,
   monthLabel,
   monthKey,
-  matchesPeriod,
-  formatDate,
-  weekStartISO,
   CONDUCT_LEVELS,
 } from '../utils/helpers.js'
 
 export default function StudentMonthly() {
-  const { session, students, rules, violations, isWeekLocked } = useApp()
+  const { session, students, rules, violations } = useApp()
   const me = students.find((s) => s.id === session.id) || session
   const start = currentMonth()
   const [monthSel, setMonthSel] = useState(() => monthKey(start.year, start.month))
 
   const [year, month] = monthSel.split('-').map(Number)
   const period = { type: 'month', year, month }
-  const ruleMap = useMemo(() => Object.fromEntries(rules.map((r) => [r.id, r])), [rules])
   const months = useMemo(() => availableMonths(violations), [violations])
-  const weeks = useMemo(() => weeksInMonth(year, month), [year, month])
 
   const { rows } = useMemo(
     () => buildStandings(students, rules, violations, period),
@@ -42,34 +37,6 @@ export default function StudentMonthly() {
     })
     return acc
   }, [rows])
-
-  const weekRows = useMemo(
-    () =>
-      weeks.map((w) => {
-        const wp = { type: 'week', year: w.year, week: w.week }
-        const list = violations.filter((v) => v.studentId === me.id && matchesPeriod(v.date, wp))
-        const deducted = list.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
-        const score = Math.max(0, 100 - deducted)
-        return {
-          ...w,
-          locked: isWeekLocked(w),
-          list,
-          count: list.length,
-          deducted,
-          score,
-          conduct: conductOf(score),
-        }
-      }),
-    [weeks, violations, me.id, ruleMap, isWeekLocked],
-  )
-
-  const myMonthViolations = useMemo(
-    () =>
-      violations
-        .filter((v) => v.studentId === me.id && matchesPeriod(v.date, period))
-        .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
-    [violations, me.id, period],
-  )
 
   return (
     <div className="space-y-5">
@@ -148,51 +115,7 @@ export default function StudentMonthly() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="mb-4 flex items-center gap-2 font-bold text-slate-800">
-          <TrendingUp size={18} className="text-sky-500" /> Chi tiết từng tuần trong tháng
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
-                <th className="py-2.5 pr-3 font-semibold">Tuần</th>
-                <th className="py-2.5 pr-3 font-semibold">Điểm</th>
-                <th className="py-2.5 pr-3 font-semibold">Số lỗi</th>
-                <th className="py-2.5 pr-3 font-semibold">Điểm trừ</th>
-                <th className="py-2.5 pr-3 font-semibold">Xếp loại</th>
-                <th className="py-2.5 pr-3 font-semibold">Bằng chứng</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weekRows.map((w) => (
-                <tr key={`${w.year}-W${w.week}`} className="border-b border-slate-50 last:border-0">
-                  <td className="py-2.5 pr-3 font-medium text-slate-700">
-                    Tuần {w.week} (bắt đầu {formatDate(weekStartISO(w))})
-                  </td>
-                  <td className="py-2.5 pr-3 font-bold text-slate-700">{w.score}</td>
-                  <td className="py-2.5 pr-3 text-slate-500">{w.count}</td>
-                  <td className="py-2.5 pr-3 text-rose-500">-{w.deducted}đ</td>
-                  <td className="py-2.5 pr-3">
-                    <span className={`rounded-lg border px-2.5 py-0.5 text-xs font-bold ${w.conduct.cls}`}>
-                      {w.conduct.label}
-                    </span>
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    {w.locked ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                        <Lock size={10} /> Đã chốt
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-semibold text-slate-300">Chưa chốt</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <MonthlySummary year={year} month={month} studentId={me.id} />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="mb-3 font-bold text-slate-800">Xếp loại toàn lớp (tháng {month})</h3>
@@ -203,49 +126,6 @@ export default function StudentMonthly() {
               <p className="text-xs font-semibold opacity-80">{l.label}</p>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center gap-2">
-          <AlertTriangle size={18} className="text-rose-500" />
-          <h3 className="font-bold text-slate-800">Lịch sử vi phạm của tôi ({monthLabel(period)})</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
-                <th className="py-2.5 pr-3 font-semibold">Ngày</th>
-                <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm</th>
-                <th className="py-2.5 pr-3 font-semibold">Điểm bị trừ</th>
-                <th className="py-2.5 pr-3 font-semibold">Ghi chú</th>
-              </tr>
-            </thead>
-            <tbody>
-              {myMonthViolations.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400">
-                    Tháng này bạn không có vi phạm nào. Cố gắng nhé!
-                  </td>
-                </tr>
-              )}
-              {myMonthViolations.map((v) => {
-                const rule = ruleMap[v.ruleId]
-                return (
-                  <tr key={v.id} className="border-b border-slate-50 last:border-0">
-                    <td className="py-2.5 pr-3 text-slate-500">{formatDate(v.date)}</td>
-                    <td className="py-2.5 pr-3 font-medium text-slate-700">{rule ? rule.name : '—'}</td>
-                    <td className="py-2.5 pr-3">
-                      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                        -{rule ? rule.points : 0}đ
-                      </span>
-                    </td>
-                    <td className="max-w-[260px] truncate py-2.5 pr-3 text-xs text-slate-400">{v.note || '—'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

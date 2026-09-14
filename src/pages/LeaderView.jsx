@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Check, Users, AlertTriangle, Trophy, ShieldCheck, CalendarDays, Lock } from 'lucide-react'
+import { Check, Users, AlertTriangle, Trophy, ShieldCheck, CalendarDays, Lock, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import StatCard from '../components/StatCard.jsx'
 import {
@@ -13,6 +13,11 @@ import {
   buildStandings,
   conductOf,
   matchesPeriod,
+  statusOf,
+  VIOLATION_STATUS,
+  submitTargetFor,
+  scoresIn,
+  isClassLeaderRole,
 } from '../utils/helpers.js'
 
 function LeaderViolationForm({ members, onSave, onError }) {
@@ -121,7 +126,7 @@ function LeaderViolationForm({ members, onSave, onError }) {
 }
 
 export default function LeaderView() {
-  const { session, students, rules, violations, notify, addViolation, isWeekLocked } = useApp()
+  const { session, students, rules, violations, notify, addViolation, updateViolation, deleteViolation, isWeekLocked } = useApp()
 
   const me = students.find((s) => s.id === session?.id)
   const roleLabel = session?.roleLabel || me?.role || ''
@@ -148,15 +153,37 @@ export default function LeaderView() {
     return { type: 'all' }
   }, [periodType, current])
 
+  const scoringViolations = useMemo(
+    () => scopeViolations.filter((v) => scoresIn(v)),
+    [scopeViolations],
+  )
+
+  const periodScoring = useMemo(
+    () => scoringViolations.filter((v) => matchesPeriod(v.date, period)),
+    [scoringViolations, period],
+  )
+
   const { rows } = useMemo(
     () => buildStandings(members, rules, violations, period),
     [members, rules, violations, period],
   )
 
-  const periodViolations = useMemo(
-    () => scopeViolations.filter((v) => matchesPeriod(v.date, period)),
-    [scopeViolations, period],
+  const myDrafts = useMemo(
+    () => scopeViolations.filter((v) => statusOf(v) === 'draft' && v.byId === session?.id),
+    [scopeViolations, session],
   )
+
+  const handleSubmitAll = () => {
+    const target = submitTargetFor(roleLabel)
+    if (!myDrafts.length) return notify('Không có nháp nào để gửi.', 'error')
+    myDrafts.forEach((v) => updateViolation(v.id, { status: target, submittedAt: new Date().toISOString() }))
+    notify(`Đã gửi ${myDrafts.length} vi phạm lên ${target === 'pendingAdmin' ? 'giáo viên' : 'lớp trưởng/phó'} duyệt.`)
+  }
+
+  const handleDeleteDraft = (id) => {
+    deleteViolation(id)
+    notify('Đã xóa nháp.')
+  }
 
   const top = rows[rows.length - 1]
   const weekLocked = isWeekLocked({ year: current.year, week: current.week })
@@ -178,11 +205,19 @@ export default function LeaderView() {
   }
 
   const avgScore = members.length ? (rows.reduce((s, r) => s + r.score, 0) / members.length).toFixed(1) : '0'
-  const totalDeducted = periodViolations.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const totalDeducted = periodScoring.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
 
   const handleRecord = (formData) => {
-    addViolation({ ...formData, id: `v-${Date.now()}`, by: session?.name || 'Học sinh' })
-    notify(`Đã ghi nhận vi phạm cho ${members.find((s) => s.id === formData.studentId)?.name || ''}.`)
+    addViolation({
+      ...formData,
+      id: `v-${Date.now()}`,
+      status: 'draft',
+      by: session?.name || 'Học sinh',
+      byId: session?.id || '',
+      byRole: roleLabel,
+      createdAt: new Date().toISOString(),
+    })
+    notify(`Đã ghi nhận nháp cho ${members.find((s) => s.id === formData.studentId)?.name || ''}.`)
   }
 
   return (
@@ -206,10 +241,10 @@ export default function LeaderView() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Thành viên" value={members.length} icon={Users} color="indigo" />
         <StatCard
-          label="Vi phạm (kỳ hiện tại)"
-          value={periodViolations.length}
+          label="Vi phạm ghi nhận (kỳ)"
+          value={periodScoring.length}
           icon={AlertTriangle}
-          color={periodViolations.length ? 'rose' : 'emerald'}
+          color={periodScoring.length ? 'rose' : 'emerald'}
         />
         <StatCard
           label="Điểm trung bình"
@@ -220,6 +255,75 @@ export default function LeaderView() {
         />
         <StatCard label="Điểm trừ kỳ này" value={`-${totalDeducted}`} icon={Lock} color="rose" />
       </div>
+
+      <div className="flex items-start gap-2.5 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 text-xs leading-relaxed text-indigo-800">
+        <ShieldCheck size={16} className="mt-0.5 shrink-0" />
+        <p>
+          Vi phạm bạn ghi sẽ nằm ở trạng thái <b>Chờ gửi</b> (không tính điểm). Khi bấm{' '}
+          <b>Gửi vi phạm lên duyệt</b>
+          {isClassLeaderRole(roleLabel) ? (
+            <>
+              {' '}
+              chúng sẽ lên thẳng chỗ <b>giáo viên chủ nhiệm</b> duyệt.
+            </>
+          ) : (
+            <>
+              {' '}
+              chúng sẽ được <b>lớp trưởng / lớp phó</b> duyệt trước, sau đó <b>giáo viên</b> duyệt cuối. Điểm tạm tính
+              cho tới khi duyệt xong.
+            </>
+          )}
+        </p>
+      </div>
+
+      {myDrafts.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-slate-800">Nháp vi phạm đang soạn ({myDrafts.length})</h3>
+              <p className="text-xs text-slate-400">
+                Các vi phạm này chưa tính điểm. Xem lại rồi gửi lên để được duyệt.
+              </p>
+            </div>
+            <button
+              onClick={handleSubmitAll}
+              disabled={weekLocked}
+              className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-indigo-700 disabled:opacity-50"
+            >
+              <Check size={16} /> Gửi {myDrafts.length} vi phạm lên duyệt
+            </button>
+          </div>
+          {weekLocked && (
+            <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+              <Lock size={13} /> Tuần hiện tại đã chốt - hãy báo giáo viên mở khóa để gửi.
+            </p>
+          )}
+          <ul className="space-y-2">
+            {myDrafts.map((v) => {
+              const stu = students.find((s) => s.id === v.studentId)
+              const rule = ruleMap[v.ruleId]
+              return (
+                <li key={v.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 text-sm">
+                  <span className="font-semibold text-slate-700">{stu ? stu.name : '—'}</span>
+                  <span className="text-slate-500">
+                    {rule ? rule.name : '—'} ( -{rule ? rule.points : 0}đ)
+                  </span>
+                  <span className="text-xs text-slate-400">{v.date ? formatDate(v.date) : ''}</span>
+                  <span className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={() => handleDeleteDraft(v.id)}
+                      className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                      title="Xóa nháp"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -324,12 +428,13 @@ export default function LeaderView() {
                 <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
                 <th className="px-4 py-3 font-semibold">Điểm</th>
                 <th className="px-4 py-3 font-semibold">Người ghi</th>
+                <th className="px-4 py-3 font-semibold">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {recent.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                     Chưa có vi phạm nào.
                   </td>
                 </tr>
@@ -337,6 +442,7 @@ export default function LeaderView() {
               {recent.map((v) => {
                 const stu = students.find((s) => s.id === v.studentId)
                 const rule = ruleMap[v.ruleId]
+                const st = VIOLATION_STATUS[statusOf(v)]
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
                     <td className="px-4 py-2.5 text-slate-500">{formatDate(v.date)}</td>
@@ -348,6 +454,11 @@ export default function LeaderView() {
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-400">{v.by || 'Nhập tay'}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-semibold ${st.cls}`}>
+                        {st.label}
+                      </span>
+                    </td>
                   </tr>
                 )
               })}

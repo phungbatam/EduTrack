@@ -12,6 +12,7 @@ import StudentView from '../pages/StudentView.jsx'
 import StudentWeeks from '../pages/StudentWeeks.jsx'
 import StudentMonthly from '../pages/StudentMonthly.jsx'
 import LeaderView from '../pages/LeaderView.jsx'
+import ApprovalView from '../pages/ApprovalView.jsx'
 import { isLeaderRole } from '../utils/helpers.js'
 
 const VIEW_META = {
@@ -19,11 +20,13 @@ const VIEW_META = {
     dashboard: ['Bảng điều khiển', 'Tổng quan điểm thi đua của lớp'],
     students: ['Quản lý học sinh & phân tổ', 'Thêm, sửa, xóa học sinh và xếp tổ'],
     violations: ['Quản lý vi phạm', 'Ghi nhận lỗi vi phạm, chốt tuần làm bằng chứng'],
+    approve: ['Duyệt vi phạm', 'Duyệt/từ chối vi phạm từ tổ trưởng, lớp trưởng, lớp phó'],
     rules: ['Danh mục lỗi vi phạm', 'Các quy định điểm trừ của lớp'],
     reports: ['Báo cáo & xuất dữ liệu', 'Tổng kết tuần/tháng, xếp loại hạnh kiểm, in ấn'],
   },
   student: {
     lead: ['Điều hành của lớp', 'Xem và ghi nhận vi phạm trong phạm vi phụ trách'],
+    approve: ['Duyệt vi phạm', 'Duyệt vi phạm của tổ trưởng và chuyển lên giáo viên'],
     home: ['Trang chủ', 'Theo dõi điểm thi đua của bạn'],
     weeks: ['Vi phạm theo tuần', 'Xem vi phạm từng tuần và tuần được chốt'],
     monthly: ['Tổng kết tháng', 'Xếp loại hạnh kiểm theo điểm trung bình'],
@@ -42,11 +45,13 @@ export default function Layout() {
         dashboard: <Dashboard />,
         students: <StudentManagement />,
         violations: <ViolationManagement />,
+        approve: <ApprovalView />,
         rules: <RuleManagement />,
         reports: <ReportView />,
       }
     : {
         lead: <LeaderView />,
+        approve: <ApprovalView />,
         home: <StudentView />,
         weeks: <StudentWeeks />,
         monthly: <StudentMonthly />,
