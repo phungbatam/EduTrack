@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, Lock, ShieldCheck, Award, AlertTriangle, Medal, ChevronDown, Hourglass } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import PointsBadge from '../components/PointsBadge.jsx'
@@ -9,6 +9,7 @@ import {
   matchesPeriod,
   weekStartISO,
   formatDate,
+  isoWeekInfo,
   conductOf,
   GROUP_NAMES,
   GROUP_COLORS,
@@ -230,6 +231,27 @@ export default function StudentWeeks() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekList, openKey])
+
+  const prevSigRef = useRef(null)
+  useEffect(() => {
+    const mine = violations.filter((v) => v.studentId === me.id)
+    const sig = mine
+      .map((v) => `${v.id}:${statusOf(v)}:${v.date}`)
+      .sort()
+      .join('|')
+    if (prevSigRef.current === null) {
+      prevSigRef.current = sig
+      return
+    }
+    if (prevSigRef.current === sig) return
+    prevSigRef.current = sig
+    const newest = [...mine].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]
+    if (!newest || !newest.date) return
+    const info = isoWeekInfo(newest.date)
+    const key = info ? wkKey(info) : null
+    if (key && weekList.some((w) => wkKey(w) === key)) setOpenKey(key)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [violations, me.id, weekList])
 
   const myTotal = useMemo(() => {
     const inScope = violations.filter((v) => v.studentId === me.id && scoresIn(v))
