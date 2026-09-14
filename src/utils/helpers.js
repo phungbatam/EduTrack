@@ -105,6 +105,26 @@ export function conductOf(score) {
   return CONDUCT_LEVELS.find((l) => n >= l.min) || CONDUCT_LEVELS[CONDUCT_LEVELS.length - 1]
 }
 
+// Lực học (học lực) - dùng để phân tổ đồng đều; chưa xác định -> '--'
+export const ACADEMIC_LEVELS = ['Giỏi', 'Khá', 'Trung bình', 'Yếu']
+export const ACADEMIC_ORDER = { 'Giỏi': 0, 'Khá': 1, 'Trung bình': 2, 'Yếu': 3 }
+export const ACADEMIC_CLS = {
+  'Giỏi': 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  'Khá': 'bg-sky-50 text-sky-600 border-sky-200',
+  'Trung bình': 'bg-amber-50 text-amber-600 border-amber-200',
+  'Yếu': 'bg-rose-50 text-rose-600 border-rose-200',
+  '--': 'bg-slate-50 text-slate-400 border-slate-200',
+}
+
+export function academicLabel(student) {
+  const v = student && student.academic
+  return ACADEMIC_LEVELS.includes(v) ? v : '--'
+}
+
+export function academicCls(label) {
+  return ACADEMIC_CLS[label] || ACADEMIC_CLS['--']
+}
+
 export function isBonus(rule) {
   return !!(rule && rule.kind === 'bonus')
 }
@@ -299,7 +319,7 @@ export function buildStandings(students, rules, violations, period) {
       cells[v.studentId].violations += 1
       cells[v.studentId].deducted += pts
     }
-    if (period.type === 'month' && v.date) {
+    if ((period.type === 'month' || period.type === 'all') && v.date) {
       const info = isoWeekInfo(v.date)
       if (info) {
         const wk = `${info.year}-W${info.week}`
@@ -308,6 +328,11 @@ export function buildStandings(students, rules, violations, period) {
     }
   })
   const monthWeeks = period.type === 'month' ? weeksInMonth(period.year, period.month) : []
+  const cw = period.type === 'all' ? currentWeek() : null
+  const yearWeeks =
+    period.type === 'all'
+      ? Array.from({ length: Math.max(cw.week, 1) }, (_, i) => ({ year: cw.year, week: i + 1 }))
+      : []
   const rows = students
     .map((s) => {
       const c = cells[s.id]
@@ -318,6 +343,15 @@ export function buildStandings(students, rules, violations, period) {
           sum += Math.max(0, BASE_SCORE + (weekMap[s.id].get(`${w.year}-W${w.week}`) || 0))
         })
         score = monthWeeks.length ? Math.round((sum / monthWeeks.length) * 10) / 10 : BASE_SCORE
+      } else if (period.type === 'all') {
+        // Điểm cả năm = trung bình cộng điểm của TẤT CẢ các tuần đã diễn ra của năm học
+        // (Tuần 1 .. Tuần N hiện tại); mỗi tuần tính cả vi phạm (trừ) lẫn khen thưởng (cộng):
+        //   Điểm tuần = max(0, 100 + tổng điểm cộng/trừ đã được duyệt trong tuần đó)
+        let sum = 0
+        yearWeeks.forEach((w) => {
+          sum += Math.max(0, BASE_SCORE + (weekMap[s.id].get(`${w.year}-W${w.week}`) || 0))
+        })
+        score = yearWeeks.length ? Math.round((sum / yearWeeks.length) * 10) / 10 : BASE_SCORE
       } else {
         score = Math.max(0, BASE_SCORE - c.deducted + c.bonus)
       }

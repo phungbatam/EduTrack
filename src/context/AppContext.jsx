@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { createSeedRules, createSeedStudents, createSeedViolations } from '../data/mockData.js'
-import { weekLabel } from '../utils/helpers.js'
+import { weekLabel, ACADEMIC_LEVELS, ACADEMIC_ORDER } from '../utils/helpers.js'
 import * as api from '../lib/api.js'
 
 const STORAGE_KEYS = {
@@ -231,6 +231,37 @@ export function AppProvider({ children }) {
     })
   }, [])
 
+  // Tự xếp lại 4 tổ cho ĐỒNG ĐỀU theo lực học: mỗi nhóm Giỏi/Khá/TB/Yếu được rải đều
+  // vào các tổ; học sinh chưa xác định lực học (--) cũng được rải đều; Tổ trưởng đi theo tổ mới.
+  const rebalanceByAcademic = useCallback(() => {
+    setStudents((p) => {
+      const buckets = { 0: [], 1: [], 2: [], 3: [], 4: [] }
+      p.forEach((s) => {
+        const key = ACADEMIC_LEVELS.includes(s.academic) ? ACADEMIC_ORDER[s.academic] : 4
+        buckets[key].push(s)
+      })
+      const result = [[], [], [], []]
+      let offset = 0
+      Object.keys(buckets)
+        .map(Number)
+        .sort((a, b) => a - b)
+        .forEach((key) => {
+          const list = buckets[key]
+          for (let i = 0; i < list.length; i += 1) {
+            result[(i + offset) % 4].push(list[i])
+          }
+          offset += 1
+        })
+      return result.flatMap((bucket, idx) =>
+        bucket.map((s) => ({
+          ...s,
+          group: idx + 1,
+          manageGroup: s.role === 'Tổ trưởng' ? idx + 1 : s.manageGroup,
+        })),
+      )
+    })
+  }, [])
+
   const randomAssign = useCallback(() => {
     setStudents((p) => {
       const arr = [...p].sort(() => Math.random() - 0.5)
@@ -351,6 +382,7 @@ export function AppProvider({ children }) {
     moveStudent,
     importStudents,
     rebalanceGroups,
+    rebalanceByAcademic,
     randomAssign,
     addRule,
     updateRule,

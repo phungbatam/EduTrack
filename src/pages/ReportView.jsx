@@ -23,6 +23,9 @@ import {
   isBonus,
   ruleDelta,
   matchesPeriod,
+  academicLabel,
+  academicCls,
+  currentWeek,
 } from '../utils/helpers.js'
 import { exportReportXlsx } from '../utils/excel.js'
 import { exportNodeToPdf } from '../utils/pdf.js'
@@ -239,6 +242,13 @@ export default function ReportView() {
           <MonthlySummary year={period.year} month={period.month} />
         ) : (
           <>
+        {period.type === 'all' && (
+          <div className="mb-1 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-xs leading-relaxed text-slate-600">
+            <span className="font-bold text-indigo-700">Công thức tính điểm cả năm:</span>{' '}
+            Điểm từng tuần = <b>{'max(0, 100 + điểm cộng khen thưởng − điểm trừ vi phạm đã duyệt trong tuần)'}</b> (tính cả khen thưởng lẫn vi phạm của tất cả các tuần, các tháng);
+            Điểm cả năm = <b>trung bình cộng (Điểm Tuần 1 → Tuần {currentWeek().week})</b> của tất cả các tuần học đã diễn ra trong năm học.
+          </div>
+        )}
         <section>
           <SectionTitle>1. Bảng xếp hạng thi đua giữa các Tổ</SectionTitle>
           <div className="overflow-x-auto">
@@ -296,6 +306,7 @@ export default function ReportView() {
                   <th className="px-4 py-3 font-semibold">Họ tên</th>
                   <th className="px-4 py-3 font-semibold">Tổ</th>
                   <th className="px-4 py-3 font-semibold">Chức vụ</th>
+                  <th className="px-4 py-3 font-semibold">Lực học</th>
                   <th className="px-4 py-3 font-semibold">Số lỗi</th>
                   <th className="px-4 py-3 font-semibold">Khen</th>
                   <th className="px-4 py-3 font-semibold">Điểm trừ</th>
@@ -314,6 +325,11 @@ export default function ReportView() {
                     <td className="px-4 py-2.5 font-medium text-slate-800">{r.student.name}</td>
                     <td className="px-4 py-2.5 text-slate-500">{GROUP_NAMES[r.student.group]}</td>
                     <td className="px-4 py-2.5 text-xs text-slate-500">{r.student.role}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-block rounded-lg border px-2 py-0.5 text-[11px] font-bold ${academicCls(academicLabel(r.student))}`}>
+                        {academicLabel(r.student)}
+                      </span>
+                    </td>
                     <td className="px-4 py-2.5 text-slate-500">{r.violations}</td>
                     <td className="px-4 py-2.5 text-emerald-600">{r.bonuses}</td>
                     <td className="px-4 py-2.5 text-rose-500">-{r.deducted}</td>

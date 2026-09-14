@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import { formatDate, GROUP_NAMES, periodLabel, conductOf } from './helpers.js'
+import { formatDate, GROUP_NAMES, periodLabel, conductOf, ACADEMIC_LEVELS, academicLabel } from './helpers.js'
 
 function normHeader(h) {
   return String(h || '')
@@ -74,20 +74,21 @@ export function exportStudentsXlsx(students, filename = 'danh-sach-hoc-sinh.xlsx
     'Họ tên': s.name,
     'Ngày sinh': formatDate(s.birthDate),
     'Chức vụ': s.role || 'Học sinh',
+    'Lực học': academicLabel(s),
     Tổ: GROUP_NAMES[s.group] || '',
   }))
-  sheet(wb, 'Học sinh', rows, [5, 14, 30, 14, 18, 8])
+  sheet(wb, 'Học sinh', rows, [5, 14, 30, 14, 18, 12, 8])
   XLSX.writeFile(wb, filename)
 }
 
 export function downloadStudentTemplate() {
   const wb = XLSX.utils.book_new()
   const rows = [
-    { 'Mã HS': '09235620017', 'Họ tên': 'Nguyễn Văn Ví Dụ', 'Ngày sinh': '12/05/2010', 'Chức vụ': 'Học sinh', Tổ: 'Tổ 1' },
-    { 'Mã HS': '09235620018', 'Họ tên': 'Trần Thị Mẫu', 'Ngày sinh': '03/09/2010', 'Chức vụ': 'Học sinh', Tổ: 'Tổ 2' },
-    { 'Mã HS': '', 'Họ tên': '', 'Ngày sinh': '', 'Chức vụ': 'Học sinh', Tổ: '' },
+    { 'Mã HS': '09235620017', 'Họ tên': 'Nguyễn Văn Ví Dụ', 'Ngày sinh': '12/05/2010', 'Chức vụ': 'Học sinh', 'Lực học': 'Khá', Tổ: 'Tổ 1' },
+    { 'Mã HS': '09235620018', 'Họ tên': 'Trần Thị Mẫu', 'Ngày sinh': '03/09/2010', 'Chức vụ': 'Học sinh', 'Lực học': 'Trung bình', Tổ: 'Tổ 2' },
+    { 'Mã HS': '', 'Họ tên': '', 'Ngày sinh': '', 'Chức vụ': 'Học sinh', 'Lực học': '', Tổ: '' },
   ]
-  sheet(wb, 'Mẫu nhập', rows, [14, 30, 14, 18, 8])
+  sheet(wb, 'Mẫu nhập', rows, [14, 30, 14, 18, 12, 8])
   XLSX.writeFile(wb, 'mau-nhap-danh-sach-hoc-sinh.xlsx')
 }
 
@@ -103,6 +104,7 @@ export async function parseStudentsFile(file) {
     code: findHeader(headers, ['ma hs', 'ma hoc sinh', 'code', 'ma']),
     birthDate: findHeader(headers, ['ngay sinh', 'ngay thang nam sinh', 'birth', 'sinh ngay']),
     role: findHeader(headers, ['chuc vu', 'vai tro', 'role']),
+    academic: findHeader(headers, ['hoc luc', 'luc hoc', 'hoc lực', 'lực hoc', 'academic']),
     group: findHeader(headers, ['to', 'nhom', 'group']),
   }
   const rows = raw
@@ -110,11 +112,19 @@ export async function parseStudentsFile(file) {
       const name = clean(r[key.name])
       if (!name) return null
       const group = parseGroup(r[key.group])
+      let academic = ''
+      if (key.academic) {
+        const candidate = ACADEMIC_LEVELS.find(
+          (l) => clean(r[key.academic]).toLowerCase() === l.toLowerCase() || clean(r[key.academic]).includes(l),
+        )
+        if (candidate) academic = candidate
+      }
       return {
         name,
         code: clean(r[key.code]),
         birthDate: excelDateToISO(r[key.birthDate]),
         role: clean(r[key.role]) || 'Học sinh',
+        academic,
         group,
       }
     })

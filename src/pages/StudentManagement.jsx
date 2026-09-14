@@ -12,11 +12,12 @@ import {
   UserPlus,
   Users,
   KeyRound,
+  GraduationCap,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import Modal from '../components/Modal.jsx'
 import StatCard from '../components/StatCard.jsx'
-import { formatDate, buildStandings, currentPeriod, GROUP_NAMES } from '../utils/helpers.js'
+import { formatDate, buildStandings, currentPeriod, GROUP_NAMES, ACADEMIC_LEVELS, academicLabel, academicCls } from '../utils/helpers.js'
 import { exportStudentsXlsx, downloadStudentTemplate, parseStudentsFile } from '../utils/excel.js'
 import * as api from '../lib/api.js'
 
@@ -38,6 +39,7 @@ const emptyForm = () => ({
   role: 'Học sinh',
   manageGroup: null,
   group: 1,
+  academic: '',
 })
 
 function PasswordForm({ student, onDone, onCancel }) {
@@ -220,6 +222,22 @@ function StudentForm({ initial, onSave, onCancel }) {
             ))}
           </select>
         </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-600">Lực học</label>
+          <select
+            value={form.academic}
+            onChange={(e) => setForm({ ...form, academic: e.target.value })}
+            className={field}
+          >
+            <option value="">Chưa xác định (--)</option>
+            {ACADEMIC_LEVELS.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-slate-400">Dùng để máy tự xếp tổ cho đồng đều theo lực học.</p>
+        </div>
         {form.role === 'Tổ trưởng' && (
           <div className="sm:col-span-2">
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">Tổ được quản lý</label>
@@ -260,7 +278,7 @@ function StudentForm({ initial, onSave, onCancel }) {
 }
 
 export default function StudentManagement() {
-  const { students, rules, violations, notify, addStudent, updateStudent, deleteStudent, moveStudent, importStudents, rebalanceGroups, randomAssign } = useApp()
+  const { students, rules, violations, notify, addStudent, updateStudent, deleteStudent, moveStudent, importStudents, rebalanceGroups, rebalanceByAcademic, randomAssign } = useApp()
 
   const [search, setSearch] = useState('')
   const [group, setGroup] = useState('all')
@@ -350,6 +368,7 @@ export default function StudentManagement() {
           code: r.code || suggestCode(),
           birthDate: r.birthDate || '',
           role: r.role || 'Học sinh',
+          academic: r.academic || '',
           group: r.group && r.group >= 1 && r.group <= 4 ? r.group : ((news.length + students.length) % 4) + 1,
         })
       })
@@ -436,6 +455,17 @@ export default function StudentManagement() {
             </button>
             <button
               onClick={() => {
+                if (window.confirm('Máy sẽ tự xếp lại 4 tổ cho đồng đều theo lực học (Giỏi/Khá/TB/Yếu rải đều khắp các tổ). Học sinh chưa xác định lực học sẽ hiển thị "--". Tiếp tục?')) {
+                  rebalanceByAcademic()
+                  notify('Đã xếp lại tổ đồng đều theo lực học.')
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+            >
+              <GraduationCap size={15} /> Xếp tổ theo lực học
+            </button>
+            <button
+              onClick={() => {
                 if (window.confirm('Xếp ngẫu nhiên học sinh vào 4 tổ? Có thể thay đổi tổ hiện tại.')) {
                   randomAssign()
                   notify('Đã xếp ngẫu nhiên lại các tổ.')
@@ -463,6 +493,7 @@ export default function StudentManagement() {
                 <th className="px-4 py-3 font-semibold">Họ tên</th>
                 <th className="px-4 py-3 font-semibold">Ngày sinh</th>
                 <th className="px-4 py-3 font-semibold">Chức vụ</th>
+                <th className="px-4 py-3 font-semibold">Lực học</th>
                 <th className="px-4 py-3 font-semibold">Tổ</th>
                 <th className="px-4 py-3 font-semibold">Điểm tuần</th>
                 <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
@@ -471,7 +502,7 @@ export default function StudentManagement() {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-10 text-center text-slate-400">
                     Không có học sinh nào.
                   </td>
                 </tr>
@@ -500,6 +531,11 @@ export default function StudentManagement() {
                     </td>
                     <td className="px-4 py-3 text-slate-500">{formatDate(s.birthDate)}</td>
                     <td className="px-4 py-3 text-xs text-slate-500">{s.role}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block rounded-lg border px-2 py-0.5 text-[11px] font-bold ${academicCls(academicLabel(s))}`}>
+                        {academicLabel(s)}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <select
                         value={s.group}
