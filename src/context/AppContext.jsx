@@ -1,0 +1,301 @@
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createSeedRules, createSeedStudents, createSeedViolations } from '../data/mockData.js'
+import { weekLabel } from '../utils/helpers.js'
+import * as api from '../lib/api.js'
+
+const STORAGE_KEYS = {
+  students: 'et_students',
+  rules: 'et_rules',
+  violations: 'et_violations',
+  lockedWeeks: 'et_locked_weeks',
+  session: 'et_session',
+}
+
+const DATA_VERSION = 4
+const VERSION_KEY = 'et_data_version'
+
+const DATA_KEYS = ['et_students', 'et_rules', 'et_violations', 'et_passwords', 'et_locked_weeks']
+
+function checkDataVersion() {
+  try {
+    if (localStorage.getItem(VERSION_KEY) !== String(DATA_VERSION)) {
+      DATA_KEYS.forEach((k) => localStorage.removeItem(k))
+      localStorage.setItem(VERSION_KEY, String(DATA_VERSION))
+    }
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+function read(key, seed) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw) {
+      const data = JSON.parse(raw)
+      if (Array.isArray(data) && data.length) return data
+    }
+  } catch (e) {
+    console.warn('Không đọc được dữ liệu từ localStorage:', e)
+  }
+  return typeof seed === 'function' ? seed() : null
+}
+
+function readSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.session)
+    if (raw) {
+      const data = JSON.parse(raw)
+      if (data && typeof data === 'object' && (data.role === 'admin' || data.role === 'student')) {
+        if (data.role === 'admin' && !data.token) return null
+        return data
+      }
+    }
+  } catch (e) {
+    console.warn('Không đọc được phiên đăng nhập:', e)
+  }
+  return null
+}
+
+function write(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch (e) {
+    console.warn('Không ghi được vào localStorage:', e)
+  }
+}
+
+function clear(key) {
+  try {
+    localStorage.removeItem(key)
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+const AppContext = createContext(null)
+
+export function AppProvider({ children }) {
+  const [students, setStudents] = useState([])
+  const [rules, setRules] = useState([])
+  const [violations, setViolations] = useState([])
+  const [lockedWeeks, setLockedWeeks] = useState([])
+  const [session, setSession] = useState(readSession)
+  const [toasts, setToasts] = useState([])
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    checkDataVersion()
+    Promise.all([
+      api.loadCollection('students'),
+      api.loadCollection('rules'),
+      api.loadCollection('violations'),
+      api.loadCollection('lockedWeeks'),
+    ])
+      .then(([s, r, v, l]) => {
+        if (cancelled) return
+        setStudents(Array.isArray(s) ? s : createSeedStudents())
+        setRules(Array.isArray(r) ? r : createSeedRules())
+        setViolations(Array.isArray(v) ? v : createSeedViolations())
+        setLockedWeeks(Array.isArray(l) ? l : [])
+        setReady(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setStudents(read(STORAGE_KEYS.students, createSeedStudents))
+        setRules(read(STORAGE_KEYS.rules, createSeedRules))
+        setViolations(read(STORAGE_KEYS.violations, createSeedViolations))
+        setLockedWeeks(read(STORAGE_KEYS.lockedWeeks, () => []))
+        setReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const adminToken = session && session.role === 'admin' ? session.token : null
+
+  useEffect(() => {
+    if (!ready) return
+    write(STORAGE_KEYS.students, students)
+    api.saveCollection('students', students, adminToken)
+  }, [students, ready, adminToken])
+
+  useEffect(() => {
+    if (!ready) return
+    write(STORAGE_KEYS.rules, rules)
+    api.saveCollection('rules', rules, adminToken)
+  }, [rules, ready, adminToken])
+
+  useEffect(() => {
+    if (!ready) return
+    write(STORAGE_KEYS.violations, violations)
+    api.saveCollection('violations', violations, adminToken)
+  }, [violations, ready, adminToken])
+
+  useEffect(() => {
+    if (!ready) return
+    write(STORAGE_KEYS.lockedWeeks, lockedWeeks)
+    api.saveCollection('lockedWeeks', lockedWeeks, adminToken)
+  }, [lockedWeeks, ready, adminToken])
+
+  const notify = useCallback((message, type = 'success') => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    setToasts((t) => [...t, { id, message, type }])
+    setTimeout(() => {
+      setToasts((t) => t.filter((x) => x.id !== id))
+    }, 3200)
+  }, [])
+
+  const dismissToast = useCallback((id) => {
+    setToasts((t) => t.filter((x) => x.id !== id))
+  }, [])
+
+  const login = useCallback((user) => {
+    setSession(user)
+    write(STORAGE_KEYS.session, user)
+  }, [])
+
+  const logout = useCallback(() => {
+    setSession(null)
+    clear(STORAGE_KEYS.session)
+  }, [])
+
+  const isAdmin = Boolean(session && session.role === 'admin')
+
+  const addStudent = useCallback((student) => {
+    setStudents((p) => [...p, student])
+  }, [])
+  const updateStudent = useCallback((id, patch) => {
+    setStudents((p) => p.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+  }, [])
+  const deleteStudent = useCallback((id) => {
+    setStudents((p) => p.filter((s) => s.id !== id))
+    setViolations((p) => p.filter((v) => v.studentId !== id))
+  }, [])
+  const moveStudent = useCallback((id, group) => {
+    setStudents((p) => p.map((s) => (s.id === id ? { ...s, group } : s)))
+  }, [])
+  const importStudents = useCallback((list) => {
+    setStudents((p) => [...p, ...list])
+  }, [])
+
+  const rebalanceGroups = useCallback(() => {
+    setStudents((p) => {
+      const target = Math.ceil(p.length / 4)
+      const buckets = [[], [], [], []]
+      const leftover = []
+      p.forEach((s) => {
+        const gi = Math.min(Math.max((s.group || 1) - 1, 0), 3)
+        if (buckets[gi].length < target) buckets[gi].push(s)
+        else leftover.push({ ...s })
+      })
+      let gi = 0
+      leftover.forEach((s) => {
+        while (buckets[gi].length >= target) gi = (gi + 1) % 4
+        buckets[gi].push(s)
+      })
+      return buckets.flatMap((bucket, idx) => bucket.map((s) => ({ ...s, group: idx + 1 })))
+    })
+  }, [])
+
+  const randomAssign = useCallback(() => {
+    setStudents((p) => {
+      const arr = [...p].sort(() => Math.random() - 0.5)
+      return arr.map((s, i) => ({ ...s, group: (i % 4) + 1 }))
+    })
+  }, [])
+
+  const addRule = useCallback((rule) => {
+    setRules((p) => [...p, rule])
+  }, [])
+  const updateRule = useCallback((id, patch) => {
+    setRules((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }, [])
+  const deleteRule = useCallback((id) => {
+    setRules((p) => p.filter((r) => r.id !== id))
+    setViolations((p) => p.filter((v) => v.ruleId !== id))
+  }, [])
+
+  const addViolation = useCallback((v) => {
+    setViolations((p) => [v, ...p])
+  }, [])
+  const updateViolation = useCallback((id, patch) => {
+    setViolations((p) => p.map((v) => (v.id === id ? { ...v, ...patch } : v)))
+  }, [])
+  const deleteViolation = useCallback((id) => {
+    setViolations((p) => p.filter((v) => v.id !== id))
+  }, [])
+
+  const lockWeek = useCallback((year, week) => {
+    setLockedWeeks((p) => {
+      if (p.some((l) => l.year === year && l.week === week)) return p
+      return [...p, { id: `lw-${year}-${week}`, year, week, label: weekLabel({ year, week }), lockedAt: new Date().toISOString() }]
+    })
+  }, [])
+
+  const unlockWeek = useCallback((year, week) => {
+    setLockedWeeks((p) => p.filter((l) => !(l.year === year && l.week === week)))
+  }, [])
+
+  const isWeekLocked = useCallback(
+    (info) => {
+      if (!info) return false
+      return lockedWeeks.some((l) => l.year === info.year && l.week === info.week)
+    },
+    [lockedWeeks],
+  )
+
+  const resetDemo = useCallback(() => {
+    api
+      .resetData(adminToken)
+      .catch((e) => console.warn('Khôi phục dữ liệu từ xa thất bại:', e))
+      .then(() => {
+        clear(STORAGE_KEYS.students)
+        clear(STORAGE_KEYS.rules)
+        clear(STORAGE_KEYS.violations)
+        clear(STORAGE_KEYS.session)
+        window.location.reload()
+      })
+  }, [adminToken])
+
+  const value = {
+    students,
+    rules,
+    violations,
+    lockedWeeks,
+    session,
+    isAdmin,
+    ready,
+    toasts,
+    notify,
+    dismissToast,
+    login,
+    logout,
+    resetDemo,
+    lockWeek,
+    unlockWeek,
+    isWeekLocked,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    moveStudent,
+    importStudents,
+    rebalanceGroups,
+    randomAssign,
+    addRule,
+    updateRule,
+    deleteRule,
+    addViolation,
+    updateViolation,
+    deleteViolation,
+  }
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext)
+  if (!ctx) throw new Error('useApp phải được dùng bên trong AppProvider')
+  return ctx
+}
