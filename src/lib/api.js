@@ -7,6 +7,13 @@ const LOCAL_KEYS = {
   session: 'et_session',
 }
 
+const TS_KEYS = {
+  students: 'et_students_ts',
+  rules: 'et_rules_ts',
+  violations: 'et_violations_ts',
+  lockedWeeks: 'et_lockedWeeks_ts',
+}
+
 function localRead(key) {
   try {
     const raw = localStorage.getItem(key)
@@ -22,6 +29,18 @@ function localWrite(key, value) {
   } catch (e) {
     /* ignore */
   }
+}
+
+function getLocalTs(col) {
+  const tsKey = TS_KEYS[col]
+  if (!tsKey) return 0
+  const raw = parseInt(localStorage.getItem(tsKey) || '0', 10)
+  return isNaN(raw) ? 0 : raw
+}
+
+function markLocalTs(col) {
+  const tsKey = TS_KEYS[col]
+  if (tsKey) localWrite(tsKey, Date.now())
 }
 
 async function fetchJSON(url, options) {
@@ -54,34 +73,63 @@ function isApiUnavailable(err) {
   return !isHttpError(err) || err.status === 404 || err.status === 405
 }
 
+async function fetchWithRetry(url, options, retries = 2, delay = 800) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchJSON(url, options)
+    } catch (e) {
+      if (attempt < retries && !isHttpError(e)) {
+        await new Promise((r) => setTimeout(r, delay * (attempt + 1)))
+        continue
+      }
+      throw e
+    }
+  }
+}
+
+const SEED_COUNTS = { students: 45, rules: 12, violations: 0, lockedWeeks: 0 }
+
 export async function loadCollection(col) {
+  const local = localRead(LOCAL_KEYS[col])
+  const localTs = getLocalTs(col)
   try {
-    const res = await fetchJSON(`/api/store?col=${col}`)
+    const res = await fetchWithRetry(`/api/store?col=${col}`, {})
     const body = await parseOrThrow(res)
     if (!Array.isArray(body.data)) throw new Error('Dữ liệu không hợp lệ')
-    localWrite(LOCAL_KEYS[col], body.data)
-    return body.data
+    const apiData = body.data
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
+    const localIsFresh = localTs > 0 && (Date.now() - localTs) < SEVEN_DAYS
+    if (Array.isArray(local) && local.length > 0 && localIsFresh && apiData.length <= (SEED_COUNTS[col] || 0)) {
+      return local
+    }
+    localWrite(LOCAL_KEYS[col], apiData)
+    return apiData
   } catch (e) {
     if (isHttpError(e) && !isApiUnavailable(e)) throw e
-    const cached = localRead(LOCAL_KEYS[col])
-    return Array.isArray(cached) ? cached : null
+    return Array.isArray(local) ? local : null
   }
 }
 
 export async function saveCollection(col, data, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
   try {
-    const headers = { 'Content-Type': 'application/json' }
-    if (token) headers.Authorization = `Bearer ${token}`
-    const res = await fetchJSON(`/api/store?col=${col}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ data }),
-    })
+    const res = await fetchWithRetry(
+      `/api/store?col=${col}`,
+      { method: 'POST', headers, body: JSON.stringify({ data }) },
+      2,
+      1000,
+    )
     await parseOrThrow(res)
+    localWrite(LOCAL_KEYS[col], data)
+    markLocalTs(col)
+    return true
   } catch (e) {
     console.warn('[api] Lưu dữ liệu từ xa thất bại, chỉ lưu cục bộ:', col, e)
+    localWrite(LOCAL_KEYS[col], data)
+    markLocalTs(col)
+    return false
   }
-  localWrite(LOCAL_KEYS[col], data)
 }
 
 export async function adminLogin({ account, password }) {
@@ -150,6 +198,13 @@ export async function resetData(token) {
   Object.keys(LOCAL_KEYS).forEach((k) => {
     try {
       localStorage.removeItem(LOCAL_KEYS[k])
+    } catch (e) {
+      /* ignore */
+    }
+  })
+  Object.values(TS_KEYS).forEach((k) => {
+    try {
+      localStorage.removeItem(k)
     } catch (e) {
       /* ignore */
     }

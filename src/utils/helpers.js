@@ -7,7 +7,7 @@ export const CONDUCT_LEVELS = [
   { label: 'Tốt', min: 90, cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
   { label: 'Khá', min: 80, cls: 'bg-sky-50 text-sky-600 border-sky-200' },
   { label: 'Đạt', min: 70, cls: 'bg-amber-50 text-amber-600 border-amber-200' },
-  { label: 'Chưa đạt', min: 0, cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+  { label: 'Chưa đạt', min: 40, cls: 'bg-rose-50 text-rose-600 border-rose-200' },
 ]
 
 export function conductOf(score) {

@@ -82,6 +82,7 @@ export function AppProvider({ children }) {
   const [session, setSession] = useState(readSession)
   const [toasts, setToasts] = useState([])
   const [ready, setReady] = useState(false)
+  const [syncStatus, setSyncStatus] = useState('synced')
 
   useEffect(() => {
     let cancelled = false
@@ -118,25 +119,41 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.students, students)
-    api.saveCollection('students', students, adminToken)
+    if (!adminToken) return
+    setSyncStatus('saving')
+    api.saveCollection('students', students, adminToken).then((ok) => {
+      setSyncStatus(ok ? 'synced' : 'local-only')
+    })
   }, [students, ready, adminToken])
 
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.rules, rules)
-    api.saveCollection('rules', rules, adminToken)
+    if (!adminToken) return
+    setSyncStatus('saving')
+    api.saveCollection('rules', rules, adminToken).then((ok) => {
+      setSyncStatus(ok ? 'synced' : 'local-only')
+    })
   }, [rules, ready, adminToken])
 
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.violations, violations)
-    api.saveCollection('violations', violations, adminToken)
+    if (!adminToken) return
+    setSyncStatus('saving')
+    api.saveCollection('violations', violations, adminToken).then((ok) => {
+      setSyncStatus(ok ? 'synced' : 'local-only')
+    })
   }, [violations, ready, adminToken])
 
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.lockedWeeks, lockedWeeks)
-    api.saveCollection('lockedWeeks', lockedWeeks, adminToken)
+    if (!adminToken) return
+    setSyncStatus('saving')
+    api.saveCollection('lockedWeeks', lockedWeeks, adminToken).then((ok) => {
+      setSyncStatus(ok ? 'synced' : 'local-only')
+    })
   }, [lockedWeeks, ready, adminToken])
 
   const notify = useCallback((message, type = 'success') => {
@@ -268,6 +285,7 @@ export function AppProvider({ children }) {
     isAdmin,
     ready,
     toasts,
+    syncStatus,
     notify,
     dismissToast,
     login,

@@ -1,8 +1,8 @@
-import { Menu, LogOut } from 'lucide-react'
+import { Menu, LogOut, CloudOff } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 
 export default function Header({ title, subtitle, onMenu }) {
-  const { session, isAdmin, logout } = useApp()
+  const { session, isAdmin, logout, syncStatus } = useApp()
   const today = new Date().toLocaleDateString('vi-VN', {
     weekday: 'long',
     day: '2-digit',
@@ -24,6 +24,12 @@ export default function Header({ title, subtitle, onMenu }) {
           <h1 className="truncate text-base font-bold text-slate-800 md:text-lg">{title}</h1>
           <p className="hidden truncate text-xs text-slate-500 sm:block">{subtitle}</p>
         </div>
+        {syncStatus === 'local-only' && (
+          <span className="hidden items-center gap-1.5 rounded-xl bg-amber-100 px-2.5 py-1.5 text-xs font-semibold text-amber-700 md:flex" title="Không thể đồng bộ lên máy chủ. Dữ liệu chỉ được lưu trên trình duyệt này.">
+            <CloudOff size={14} />
+            Chưa đồng bộ
+          </span>
+        )}
         <div className="hidden items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 md:flex">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           {today}
