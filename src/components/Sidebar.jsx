@@ -9,8 +9,10 @@ import {
   RefreshCcw,
   CalendarDays,
   BarChart3,
+  Megaphone,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
+import { isLeaderRole } from '../utils/helpers.js'
 
 const ADMIN_NAV = [
   { key: 'dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
@@ -20,6 +22,8 @@ const ADMIN_NAV = [
   { key: 'reports', label: 'Báo cáo & Xuất dữ liệu', icon: FileText },
 ]
 
+const LEAD_NAV = [{ key: 'lead', label: 'Điều hành của lớp', icon: Megaphone }]
+
 const STUDENT_NAV = [
   { key: 'home', label: 'Trang chủ', icon: LayoutDashboard },
   { key: 'weeks', label: 'Vi phạm theo tuần', icon: CalendarDays },
@@ -28,7 +32,8 @@ const STUDENT_NAV = [
 
 export default function Sidebar({ view, onNavigate, open, onClose }) {
   const { session, isAdmin, logout, resetDemo, notify } = useApp()
-  const nav = isAdmin ? ADMIN_NAV : STUDENT_NAV
+  const isLeader = !!session && !isAdmin && isLeaderRole(session.roleLabel)
+  const nav = isAdmin ? ADMIN_NAV : isLeader ? [...LEAD_NAV, ...STUDENT_NAV] : STUDENT_NAV
 
   return (
     <>
@@ -99,7 +104,7 @@ export default function Sidebar({ view, onNavigate, open, onClose }) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">{session?.name}</p>
               <p className="text-[11px] text-slate-400">
-                {isAdmin ? 'Quản trị viên' : `Học sinh - ${session?.code || ''}`}
+                {isAdmin ? 'Quản trị viên' : isLeader ? session.roleLabel : `Học sinh - ${session?.code || ''}`}
               </p>
             </div>
             <button

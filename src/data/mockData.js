@@ -46,15 +46,25 @@ const CLASS_NAMES = [
   'Phạm Ngọc Anh Vũ',
 ]
 
+const DEFAULT_LEADERS = {
+  'HS003': { role: 'Tổ trưởng', manageGroup: 1 },
+  'HS004': { role: 'Lớp phó học tập' },
+  'HS008': { role: 'Tổ trưởng', manageGroup: 2 },
+  'HS026': { role: 'Lớp trưởng' },
+  'HS032': { role: 'Tổ trưởng', manageGroup: 3 },
+}
+
 export function createSeedStudents() {
   return CLASS_NAMES.map((name, i) => {
     const n = i + 1
+    const lead = DEFAULT_LEADERS[`HS${String(n).padStart(3, '0')}`] || {}
     return {
       id: `HS${String(n).padStart(3, '0')}`,
       name,
       code: `0923562${String(n).padStart(4, '0')}`,
       birthDate: '',
-      role: 'Học sinh',
+      role: lead.role || 'Học sinh',
+      manageGroup: lead.manageGroup || null,
       group: n <= 12 ? 1 : n <= 23 ? 2 : n <= 34 ? 3 : 4,
     }
   })

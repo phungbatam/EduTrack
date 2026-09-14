@@ -36,6 +36,7 @@ const emptyForm = () => ({
   code: '',
   birthDate: '',
   role: 'Học sinh',
+  manageGroup: null,
   group: 1,
 })
 
@@ -186,7 +187,18 @@ function StudentForm({ initial, onSave, onCancel }) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-slate-600">Chức vụ</label>
-          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={field}>
+          <select
+            value={form.role}
+            onChange={(e) => {
+              const role = e.target.value
+              setForm({
+                ...form,
+                role,
+                manageGroup: role === 'Tổ trưởng' && !form.manageGroup ? form.group : form.manageGroup,
+              })
+            }}
+            className={field}
+          >
             {ROLES.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -208,6 +220,25 @@ function StudentForm({ initial, onSave, onCancel }) {
             ))}
           </select>
         </div>
+        {form.role === 'Tổ trưởng' && (
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-xs font-semibold text-slate-600">Tổ được quản lý</label>
+            <select
+              value={form.manageGroup || form.group}
+              onChange={(e) => setForm({ ...form, manageGroup: Number(e.target.value) })}
+              className={field}
+            >
+              {[1, 2, 3, 4].map((g) => (
+                <option key={g} value={g}>
+                  Tổ {g}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Tổ trưởng sẽ được quyền xem và ghi vi phạm cho tổ này.
+            </p>
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <button
@@ -462,7 +493,7 @@ export default function StudentManagement() {
                         <span className="font-semibold text-slate-700">{s.name}</span>
                         {s.role !== 'Học sinh' && (
                           <span className="hidden rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 lg:inline">
-                            {s.role}
+                            {s.role === 'Tổ trưởng' ? `${s.role} · QL Tổ ${s.manageGroup || s.group}` : s.role}
                           </span>
                         )}
                       </div>

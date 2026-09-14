@@ -163,7 +163,7 @@ export async function studentLogin({ code, password }) {
       const hash = passwords[stu.id]
       if (!hash) throw new Error('Mật khẩu chưa được cấp. Hãy nhờ giáo viên chủ nhiệm đặt mật khẩu.')
       if (sha256(password) !== hash) throw new Error('Sai mật khẩu. Vui lòng thử lại.')
-      return { role: 'student', id: stu.id, name: stu.name, code: stu.code, group: stu.group }
+      return { role: 'student', id: stu.id, name: stu.name, code: stu.code, group: stu.group, roleLabel: stu.role, manageGroup: stu.manageGroup || stu.group || null }
     }
     throw e
   }

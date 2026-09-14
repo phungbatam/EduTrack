@@ -11,6 +11,8 @@ import ReportView from '../pages/ReportView.jsx'
 import StudentView from '../pages/StudentView.jsx'
 import StudentWeeks from '../pages/StudentWeeks.jsx'
 import StudentMonthly from '../pages/StudentMonthly.jsx'
+import LeaderView from '../pages/LeaderView.jsx'
+import { isLeaderRole } from '../utils/helpers.js'
 
 const VIEW_META = {
   admin: {
@@ -21,6 +23,7 @@ const VIEW_META = {
     reports: ['Báo cáo & xuất dữ liệu', 'Tổng kết tuần/tháng, xếp loại hạnh kiểm, in ấn'],
   },
   student: {
+    lead: ['Điều hành của lớp', 'Xem và ghi nhận vi phạm trong phạm vi phụ trách'],
     home: ['Trang chủ', 'Theo dõi điểm thi đua của bạn'],
     weeks: ['Vi phạm theo tuần', 'Xem vi phạm từng tuần và tuần được chốt'],
     monthly: ['Tổng kết tháng', 'Xếp loại hạnh kiểm theo điểm trung bình'],
@@ -30,7 +33,8 @@ const VIEW_META = {
 export default function Layout() {
   const { session } = useApp()
   const isAdmin = session && session.role === 'admin'
-  const [view, setView] = useState(isAdmin ? 'dashboard' : 'home')
+  const isLeader = !!session && session.role === 'student' && isLeaderRole(session.roleLabel)
+  const [view, setView] = useState(isAdmin ? 'dashboard' : isLeader ? 'lead' : 'home')
   const [menuOpen, setMenuOpen] = useState(false)
 
   const views = isAdmin
@@ -42,6 +46,7 @@ export default function Layout() {
         reports: <ReportView />,
       }
     : {
+        lead: <LeaderView />,
         home: <StudentView />,
         weeks: <StudentWeeks />,
         monthly: <StudentMonthly />,

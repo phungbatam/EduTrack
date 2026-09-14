@@ -3,6 +3,30 @@ export const BASE_SCORE = 100
 export const GROUP_NAMES = { 1: 'Tổ 1', 2: 'Tổ 2', 3: 'Tổ 3', 4: 'Tổ 4' }
 export const GROUP_COLORS = { 1: '#6366f1', 2: '#10b981', 3: '#f59e0b', 4: '#ef4444' }
 
+export const LEADER_ROLES = [
+  'Lớp trưởng',
+  'Lớp phó học tập',
+  'Lớp phó lao động',
+  'Lớp phó văn thể mỹ',
+  'Tổ trưởng',
+]
+
+export function isLeaderRole(roleLabel) {
+  return LEADER_ROLES.includes(roleLabel)
+}
+
+export function leaderScope(roleLabel, manageGroup, ownGroup) {
+  if (!isLeaderRole(roleLabel)) return null
+  if (roleLabel === 'Tổ trưởng') return { type: 'group', group: manageGroup || ownGroup || 0 }
+  return { type: 'all' }
+}
+
+export function scopeLabel(scope) {
+  if (!scope) return ''
+  if (scope.type === 'group') return GROUP_NAMES[scope.group] || `Tổ ${scope.group}`
+  return 'Cả lớp'
+}
+
 export const CONDUCT_LEVELS = [
   { label: 'Tốt', min: 90, cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
   { label: 'Khá', min: 80, cls: 'bg-sky-50 text-sky-600 border-sky-200' },

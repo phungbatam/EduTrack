@@ -1,8 +1,10 @@
 import { Menu, LogOut, CloudOff } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
+import { isLeaderRole } from '../utils/helpers.js'
 
 export default function Header({ title, subtitle, onMenu }) {
   const { session, isAdmin, logout, syncStatus } = useApp()
+  const isLeader = !!session && !isAdmin && isLeaderRole(session.roleLabel)
   const today = new Date().toLocaleDateString('vi-VN', {
     weekday: 'long',
     day: '2-digit',
@@ -40,8 +42,8 @@ export default function Header({ title, subtitle, onMenu }) {
           </div>
           <div className="hidden sm:block">
             <p className="max-w-[140px] truncate text-xs font-semibold text-slate-700">{session?.name}</p>
-            <p className={`text-[10px] font-medium ${isAdmin ? 'text-indigo-500' : 'text-emerald-500'}`}>
-              {isAdmin ? 'Quản trị viên' : 'Học sinh'}
+            <p className={`text-[10px] font-medium ${isAdmin ? 'text-indigo-500' : isLeader ? 'text-violet-500' : 'text-emerald-500'}`}>
+              {isAdmin ? 'Quản trị viên' : isLeader ? session.roleLabel : 'Học sinh'}
             </p>
           </div>
           <button

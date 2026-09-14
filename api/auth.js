@@ -46,6 +46,7 @@ export default async function handler(req, res) {
       code: stu.code,
       group: stu.group,
       roleLabel: stu.role,
+      manageGroup: stu.manageGroup || stu.group || null,
     })
   }
 
