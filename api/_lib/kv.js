@@ -21,7 +21,14 @@ export async function kvGet(key) {
   try {
     const val = await redis.get(key)
     if (val == null) return null
-    return typeof val === 'string' ? JSON.parse(val) : val
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val)
+      } catch (e) {
+        return val
+      }
+    }
+    return val
   } catch (e) {
     console.warn('KV read failed:', key, e)
     return null
