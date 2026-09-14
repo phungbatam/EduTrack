@@ -4,5 +4,6 @@ export const SEEDS = {
   students: createSeedStudents,
   rules: createSeedRules,
   violations: createSeedViolations,
+  submissions: () => [],
   lockedWeeks: () => [],
 }

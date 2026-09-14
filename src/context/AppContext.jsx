@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   students: 'et_students',
   rules: 'et_rules',
   violations: 'et_violations',
+  submissions: 'et_submissions',
   lockedWeeks: 'et_locked_weeks',
   session: 'et_session',
 }
@@ -78,6 +79,7 @@ export function AppProvider({ children }) {
   const [students, setStudents] = useState([])
   const [rules, setRules] = useState([])
   const [violations, setViolations] = useState([])
+  const [submissions, setSubmissions] = useState([])
   const [lockedWeeks, setLockedWeeks] = useState([])
   const [session, setSession] = useState(readSession)
   const [toasts, setToasts] = useState([])
@@ -91,13 +93,15 @@ export function AppProvider({ children }) {
       api.loadCollection('students'),
       api.loadCollection('rules'),
       api.loadCollection('violations'),
+      api.loadCollection('submissions'),
       api.loadCollection('lockedWeeks'),
     ])
-      .then(([s, r, v, l]) => {
+      .then(([s, r, v, m, l]) => {
         if (cancelled) return
         setStudents(Array.isArray(s) ? s : createSeedStudents())
         setRules(Array.isArray(r) ? r : createSeedRules())
         setViolations(Array.isArray(v) ? v : createSeedViolations())
+        setSubmissions(Array.isArray(m) ? m : [])
         setLockedWeeks(Array.isArray(l) ? l : [])
         setReady(true)
       })
@@ -106,6 +110,7 @@ export function AppProvider({ children }) {
         setStudents(read(STORAGE_KEYS.students, createSeedStudents))
         setRules(read(STORAGE_KEYS.rules, createSeedRules))
         setViolations(read(STORAGE_KEYS.violations, createSeedViolations))
+        setSubmissions(read(STORAGE_KEYS.submissions, () => []))
         setLockedWeeks(read(STORAGE_KEYS.lockedWeeks, () => []))
         setReady(true)
       })
@@ -145,6 +150,16 @@ export function AppProvider({ children }) {
       setSyncStatus(ok ? 'synced' : 'local-only')
     })
   }, [violations, ready, adminToken])
+
+  useEffect(() => {
+    if (!ready) return
+    write(STORAGE_KEYS.submissions, submissions)
+    if (!adminToken) return
+    setSyncStatus('saving')
+    api.saveCollection('submissions', submissions, adminToken).then((ok) => {
+      setSyncStatus(ok ? 'synced' : 'local-only')
+    })
+  }, [submissions, ready, adminToken])
 
   useEffect(() => {
     if (!ready) return
@@ -244,6 +259,41 @@ export function AppProvider({ children }) {
     setViolations((p) => p.filter((v) => v.id !== id))
   }, [])
 
+  const addSubmission = useCallback((s) => {
+    setSubmissions((p) => [s, ...p])
+  }, [])
+  const updateSubmission = useCallback((id, patch) => {
+    setSubmissions((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+  }, [])
+  const deleteSubmission = useCallback((id) => {
+    setSubmissions((p) => p.filter((x) => x.id !== id))
+  }, [])
+
+  const approveSubmission = useCallback((sub, approvedBy) => {
+    const now = new Date().toISOString()
+    const lines = (sub.lines || []).filter((l) => l && l.studentId && l.ruleId)
+    setSubmissions((p) =>
+      p.map((x) => (x.id === sub.id ? { ...x, status: 'approved', approvedAt: now, approvedBy: approvedBy || '' } : x)),
+    )
+    if (lines.length) {
+      const next = lines.map((l) => ({
+        id: `v-${sub.id}-${l.id}`,
+        studentId: l.studentId,
+        ruleId: l.ruleId,
+        date: l.date,
+        note: l.note || '',
+        status: 'approved',
+        by: (sub.createdBy && sub.createdBy.name) || 'Học sinh',
+        byId: (sub.createdBy && sub.createdBy.id) || null,
+        byRole: (sub.createdBy && sub.createdBy.role) || 'Học sinh',
+        submissionId: sub.id,
+        approvedAt: now,
+        approvedBy: approvedBy || '',
+      }))
+      setViolations((p) => (p ? [...next, ...p] : next))
+    }
+  }, [])
+
   const lockWeek = useCallback((year, week) => {
     setLockedWeeks((p) => {
       if (p.some((l) => l.year === year && l.week === week)) return p
@@ -280,6 +330,7 @@ export function AppProvider({ children }) {
     students,
     rules,
     violations,
+    submissions,
     lockedWeeks,
     session,
     isAdmin,
@@ -307,6 +358,10 @@ export function AppProvider({ children }) {
     addViolation,
     updateViolation,
     deleteViolation,
+    addSubmission,
+    updateSubmission,
+    deleteSubmission,
+    approveSubmission,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

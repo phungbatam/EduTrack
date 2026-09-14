@@ -1,171 +1,143 @@
 import { useMemo, useState } from 'react'
-import { ShieldCheck, Check, X, Search, AlertTriangle, Lock, CalendarDays, RotateCcw, FileText } from 'lucide-react'
+import { ShieldCheck, Search, FileText, Send } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
-import PointsBadge from '../components/PointsBadge.jsx'
+import SubmissionModal from '../components/SubmissionModal.jsx'
 import {
-  isoWeekInfo,
-  violationDateLabel,
-  statusOf,
-  VIOLATION_STATUS,
-  isClassLeaderRole,
-  ruleDelta,
+  submissionStatusOf,
+  SUBMISSION_STATUS,
+  submissionDelta,
+  submissionWeekKey,
+  weekKeyOf,
+  currentPeriod,
+  weekLabel,
 } from '../utils/helpers.js'
 
-const TABS_BY_ROLE = {
-  2: [
-    { key: 'queue', label: 'Chờ duyệt' },
-    { key: 'drafts', label: 'Nháp chưa gửi' },
-    { key: 'approved', label: 'Đã duyệt' },
-    { key: 'rejected', label: 'Từ chối' },
-  ],
-  1: [
-    { key: 'queue', label: 'Chờ duyệt' },
-    { key: 'approved', label: 'Đã duyệt' },
-    { key: 'rejected', label: 'Từ chối' },
-  ],
-}
+const TABS_LEADER = [
+  { key: 'queue', label: 'Chờ chốt' },
+  { key: 'sent', label: 'Đã gửi lên GVCN' },
+  { key: 'approved', label: 'Đã duyệt' },
+  { key: 'rejected', label: 'Trả về' },
+]
 
-const TABS_BY_ROLE_COUNTS = {
-  2: { queue: (q) => q.length, drafts: (q) => q.length, approved: (q) => q.length, rejected: (q) => q.length },
-  1: { queue: (q) => q.length, approved: (q) => q.length, rejected: (q) => q.length },
-}
-
-function Chip({ status }) {
-  const s = VIOLATION_STATUS[status] || VIOLATION_STATUS.draft
-  return (
-    <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-semibold ${s.cls}`}>
-      {s.label}
-    </span>
-  )
-}
-
-function RejectDialog({ open, onClose, onSubmit }) {
-  const [reason, setReason] = useState('')
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h3 className="text-base font-bold text-slate-800">Lý do từ chối</h3>
-        <p className="mt-1 text-sm text-slate-500">Ghi rõ lý do để người ghi có thể chỉnh sửa và gửi lại.</p>
-        <textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          rows={3}
-          className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-          placeholder="Ví dụ: Thiếu bằng chứng, cần bổ sung ngày giờ chi tiết hơn."
-          autoFocus
-        />
-        <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-            Hủy
-          </button>
-          <button
-            onClick={() => { onSubmit(reason.trim()); setReason('') }}
-            disabled={!reason.trim()}
-            className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-rose-700 disabled:opacity-50"
-          >
-            <X size={16} /> Từ chối
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+const TABS_ADMIN = [
+  { key: 'queue', label: 'Chờ duyệt' },
+  { key: 'approved', label: 'Đã duyệt' },
+  { key: 'rejected', label: 'Trả về' },
+]
 
 export default function ApprovalView() {
-  const { session, isAdmin, students, rules, violations, notify, updateViolation } = useApp()
+  const { session, isAdmin, students, rules, submissions, notify, updateSubmission, approveSubmission } = useApp()
 
-  const myRole = session?.roleLabel || ''
-  const level = isAdmin ? 2 : isClassLeaderRole(myRole) ? 1 : 0
-  const tabs = TABS_BY_ROLE[level] || TABS_BY_ROLE[1]
+  const roleLabel = session?.roleLabel || ''
+  const isHead = roleLabel === 'Lớp trưởng'
+  const level = isAdmin ? 2 : isHead ? 1 : 0
+  const tabs = isAdmin ? TABS_ADMIN : TABS_LEADER
   const [tab, setTab] = useState(tabs[0].key)
   const [search, setSearch] = useState('')
   const [grp, setGrp] = useState('all')
   const [weekFilter, setWeekFilter] = useState('current')
-  const [rejectTarget, setRejectTarget] = useState(null)
+  const [active, setActive] = useState(null)
+  const [modalMode, setModalMode] = useState('review')
 
   const ruleMap = useMemo(() => Object.fromEntries(rules.map((r) => [r.id, r])), [rules])
-  const stuMap = useMemo(() => Object.fromEntries(students.map((s) => [s.id, s])), [students])
+  const current = currentPeriod()
 
-  const scoringV = useMemo(
-    () => violations.filter((v) => {
-      if (tab === 'queue') {
-        if (level === 2) return statusOf(v) === 'pendingClass' || statusOf(v) === 'pendingAdmin'
-        return statusOf(v) === 'pendingClass'
-      }
-      if (tab === 'approved') return statusOf(v) === 'approved'
-      if (tab === 'rejected') return statusOf(v) === 'rejected'
-      if (tab === 'drafts') return statusOf(v) === 'draft' && isAdmin
-      return false
-    }),
-    [violations, tab, level, isAdmin],
-  )
+  const weeks = useMemo(() => {
+    const map = new Map()
+    submissions.forEach((s) => {
+      if (s.week) map.set(weekKeyOf(s.week), s.week)
+    })
+    map.set(weekKeyOf(current), current)
+    return [...map.values()].sort((a, b) => b.week - a.week)
+  }, [submissions, current])
+
+  const scoped = useMemo(() => {
+    return submissions
+      .map((s) => ({ ...s, st: submissionStatusOf(s) }))
+      .filter((s) => {
+        if (tab === 'queue') {
+          if (level === 2) return s.st === 'pendingAdmin'
+          return s.st === 'pendingLeader' && s.createdBy && s.createdBy.id !== session?.id
+        }
+        if (tab === 'sent') return level === 1 && s.st === 'pendingAdmin' && s.reviewedBy && s.reviewedBy.id === session?.id
+        if (tab === 'approved') return s.st === 'approved'
+        if (tab === 'rejected') return s.st === 'rejected'
+        return false
+      })
+      .sort((a, b) => (b.submittedAt || b.createdAt || '').localeCompare(a.submittedAt || a.createdAt || ''))
+  }, [submissions, tab, level, session])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const cur = weekFilter === 'current' ? null : weekFilter
-    return scoringV
-      .filter((v) => {
-        if (grp !== 'all') {
-          const s = stuMap[v.studentId]
-          if (!s || s.group !== Number(grp)) return false
-        }
-        if (cur && v.date) {
-          const info = isoWeekInfo(v.date)
-          if (info && `${info.year}-W${info.week}` !== cur) return false
-        }
+    const wkKey = weekFilter === 'current' ? weekKeyOf(current) : weekFilter
+    return scoped
+      .filter((s) => {
+        if (grp !== 'all' && s.scopeGroup !== null && s.scopeGroup !== Number(grp)) return false
+        if (weekFilter !== 'all' && s.week && weekKeyOf(s.week) !== wkKey) return false
+        if (weekFilter !== 'all' && !s.week) return false
         if (!q) return true
-        const s = stuMap[v.studentId]
-        const rule = ruleMap[v.ruleId]
-        return (
-          (s && (s.name.toLowerCase().includes(q) || String(s.code || '').toLowerCase().includes(q))) ||
-          (rule && rule.name.toLowerCase().includes(q)) ||
-          (v.note || '').toLowerCase().includes(q)
-        )
+        const creator = (s.createdBy && s.createdBy.name) || ''
+        const lines = s.lines || []
+        const matched = lines.some((l) => {
+          const stu = students.find((x) => x.id === l.studentId)
+          const rule = ruleMap[l.ruleId]
+          return (
+            (stu && (stu.name.toLowerCase().includes(q) || String(stu.code || '').toLowerCase().includes(q))) ||
+            (rule && rule.name.toLowerCase().includes(q)) ||
+            (l.note || '').toLowerCase().includes(q)
+          )
+        })
+        return creator.toLowerCase().includes(q) || matched
       })
-      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-  }, [scoringV, grp, weekFilter, search, stuMap, ruleMap])
+  }, [scoped, grp, weekFilter, search, students, ruleMap, current])
 
-  const totalDelta = filtered.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
+  const queueDelta = useMemo(() => filtered.reduce((sum, s) => sum + submissionDelta(s.lines, ruleMap), 0), [filtered, ruleMap])
 
-  const handleApprove = (id) => {
-    const v = violations.find((x) => x.id === id)
-    if (!v) return
-    const st = statusOf(v)
-    const patch = { status: isAdmin ? 'approved' : 'pendingAdmin' }
-    if (isAdmin) { patch.adminBy = session?.name || 'Admin'; patch.adminAt = new Date().toISOString() }
-    else { patch.approvedBy = session?.name || ''; patch.approvedAt = new Date().toISOString() }
-    updateViolation(id, patch)
-    notify(isAdmin ? 'Đã duyệt vi phạm.' : 'Đã chuyển lên giáo viên duyệt.')
+  const openReview = (s) => {
+    setActive(s)
+    setModalMode(level === 2 ? 'approve' : 'review')
   }
 
-  const handleReject = (id, reason) => {
-    if (!reason) return notify('Phải nhập lý do từ chối.', 'error')
-    updateViolation(id, {
+  const handleForward = (sub, editedLines) => {
+    if (level === 2) {
+      approveSubmission(sub, session?.name || 'Quản trị')
+      notify(`Đã duyệt phiếu - ${(editedLines || sub.lines || []).length} dòng đã vào bảng điểm.`)
+    } else {
+      const reviewed = { id: session?.id, name: session?.name }
+      updateSubmission(sub.id, {
+        lines: editedLines || sub.lines,
+        status: 'pendingAdmin',
+        reviewedBy: reviewed,
+        reviewedAt: new Date().toISOString(),
+      })
+      notify('Đã chốt và gửi phiếu lên trang quản trị.')
+    }
+    setActive(null)
+  }
+
+  const handleReject = (sub, reason) => {
+    if (!reason) return notify('Phải nhập lý do trả về.', 'error')
+    updateSubmission(sub.id, {
       status: 'rejected',
       rejectedBy: session?.name || '',
       rejectedReason: reason,
       rejectedAt: new Date().toISOString(),
     })
-    notify('Đã từ chối vi phạm.')
-    setRejectTarget(null)
-  }
-
-  const handleRestore = (id) => {
-    updateViolation(id, { status: 'pendingAdmin', rejectedBy: null, rejectedReason: null, rejectedAt: null })
-    notify('Đã khôi phục vào hàng chờ duyệt.')
+    notify('Đã trả về phiếu cho người soạn.')
+    setActive(null)
   }
 
   if (level === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
         <ShieldCheck size={40} className="mx-auto text-slate-300" />
-        <p className="mt-4 font-semibold text-slate-700">Bạn không có quyền duyệt vi phạm.</p>
-        <p className="mt-1 text-sm text-slate-400">Chức năng này dành cho lớp trưởng, lớp phó hoặc giáo viên chủ nhiệm.</p>
+        <p className="mt-4 font-semibold text-slate-700">Bạn không có quyền xem trang này.</p>
+        <p className="mt-1 text-sm text-slate-400">Chức năng này dành cho lớp trưởng và giáo viên chủ nhiệm.</p>
       </div>
     )
   }
+
+  const sendLabel = level === 2 ? 'Duyệt phiếu & tính điểm' : 'Chốt & gửi lên GVCN'
 
   return (
     <div className="space-y-5">
@@ -174,16 +146,15 @@ export default function ApprovalView() {
           <div>
             <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-800">
               <ShieldCheck size={20} className="text-indigo-500" />
-              Duyệt vi phạm
+              {level === 2 ? 'Duyệt phiếu tổng hợp' : 'Chốt phiếu tổng hợp'}
             </h2>
             <p className="mt-0.5 text-xs text-slate-400">
               {level === 2
-                ? 'Bạn là giáo viên chủ nhiệm - duyệt tất cả vi phạm trước khi chính thức lưu.'
-                : 'Bạn là lớp trưởng/phó - duyệt vi phạm của tổ trưởng trước khi gửi lên giáo viên.'}
+                ? 'Bạn là giáo viên chủ nhiệm - duyệt phiếu cuối cùng trước khi tính điểm.'
+                : 'Bạn là lớp trưởng - xem, chỉnh sửa và chốt phiếu của tổ trưởng trước khi gửi lên giáo viên.'}
             </p>
           </div>
         </div>
-
         <div className="mt-4 flex items-center gap-1 overflow-x-auto border-b border-slate-100">
           {tabs.map((t) => (
             <button
@@ -199,140 +170,123 @@ export default function ApprovalView() {
         </div>
       </div>
 
-      {tab === 'queue' && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="relative min-w-[200px] flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên, mã HS, lý do, ghi chú..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-            />
-          </div>
-          <select value={grp} onChange={(e) => setGrp(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400">
-            <option value="all">Tất cả tổ</option>
-            {[1, 2, 3, 4].map((g) => <option key={g} value={g}>Tổ {g}</option>)}
-          </select>
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="relative min-w-[200px] flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm tên học sinh, lỗi, người soạn, ghi chú..."
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+          />
         </div>
-      )}
-
-      {(tab === 'approved' || tab === 'rejected' || tab === 'drafts') && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="relative min-w-[200px] flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên, mã HS, lỗi..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-            />
-          </div>
-        </div>
-      )}
+        <select value={weekFilter} onChange={(e) => setWeekFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400">
+          <option value="current">Tuần hiện tại</option>
+          {weeks
+            .filter((w) => !(w.year === current.year && w.week === current.week))
+            .map((w) => (
+              <option key={weekKeyOf(w)} value={weekKeyOf(w)}>
+                {weekLabel(w)}
+              </option>
+            ))}
+          <option value="all">Tất cả tuần</option>
+        </select>
+        <select value={grp} onChange={(e) => setGrp(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400">
+          <option value="all">Tất cả phạm vi</option>
+          {[1, 2, 3, 4].map((g) => (
+            <option key={g} value={g}>
+              Tổ {g}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 p-4">
           <p className="text-sm text-slate-500">
             {tab === 'queue'
-              ? `Tổng: ${filtered.length} bản ghi chờ duyệt · Thay đổi điểm: ${totalDelta >= 0 ? '+' : ''}${totalDelta}đ`
-              : tab === 'drafts'
-                ? `Tổng: ${filtered.length} nháp tổ trưởng chưa gửi`
+              ? `Tổng: ${filtered.length} phiếu · Thay đổi điểm nếu duyệt: ${queueDelta >= 0 ? '+' : ''}${queueDelta}đ`
+              : tab === 'sent'
+                ? `Tổng: ${filtered.length} phiếu đã gửi lên GVCN`
                 : tab === 'approved'
-                  ? `Tổng: ${filtered.length} đã duyệt`
-                  : `Tổng: ${filtered.length} bị từ chối`}
+                  ? `Tổng: ${filtered.length} phiếu đã duyệt`
+                  : `Tổng: ${filtered.length} phiếu bị trả về`}
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left text-sm">
+          <table className="w-full min-w-[820px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3 font-semibold">Ngày</th>
-                <th className="px-4 py-3 font-semibold">Học sinh</th>
-                <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
-                <th className="px-4 py-3 font-semibold">Điểm</th>
-                <th className="px-4 py-3 font-semibold">Ghi chú / Lý do</th>
+                <th className="px-4 py-3 font-semibold">Tuần</th>
+                <th className="px-4 py-3 font-semibold">Phạm vi</th>
+                <th className="px-4 py-3 font-semibold">Người soạn</th>
+                <th className="px-4 py-3 text-center font-semibold">Số dòng</th>
+                <th className="px-4 py-3 text-right font-semibold">Điểm thay đổi</th>
                 <th className="px-4 py-3 font-semibold">Trạng thái</th>
-                <th className="px-4 py-3 font-semibold">Người ghi</th>
-                {tab === 'queue' && <th className="px-4 py-3 text-right font-semibold">Thao tác</th>}
-                {tab === 'rejected' && <th className="px-4 py-3 text-right font-semibold">Khôi phục</th>}
+                <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={tab === 'queue' || tab === 'rejected' ? 8 : 7} className="px-4 py-10 text-center text-slate-400">
-                    {tab === 'queue'
-                      ? 'Không có vi phạm nào chờ duyệt.'
-                      : tab === 'drafts'
-                        ? 'Không có nháp nào.'
-                        : tab === 'rejected'
-                          ? 'Không có vi phạm nào bị từ chối.'
-                          : 'Không có vi phạm đã duyệt.'}
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
+                    Không có phiếu nào.
                   </td>
                 </tr>
               )}
-              {filtered.map((v) => {
-                const s = stuMap[v.studentId]
-                const rule = ruleMap[v.ruleId]
-                const st = statusOf(v)
+              {filtered.map((s) => {
+                const cnt = (s.lines || []).filter((l) => l && l.studentId && l.ruleId).length
+                const d = submissionDelta(s.lines, ruleMap)
+                const st = s.st
+                const creator = (s.createdBy && `${s.createdBy.name}${s.createdBy.role ? ` (${s.createdBy.role})` : ''}`) || '—'
                 return (
-                  <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
-                    <td className="px-4 py-2.5">
-                      <p className="text-slate-700">{violationDateLabel(v.date)}</p>
+                  <tr key={s.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-slate-700">{s.week ? weekLabel(s.week) : '—'}</td>
+                    <td className="px-4 py-2.5 text-slate-500">{s.scopeGroup ? `Tổ ${s.scopeGroup}` : 'Cả lớp'}</td>
+                    <td className="px-4 py-2.5 text-slate-600">{creator}</td>
+                    <td className="px-4 py-2.5 text-center text-slate-500">{cnt}</td>
+                    <td className={`px-4 py-2.5 text-right font-bold ${d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {d >= 0 ? '+' : ''}
+                      {d}đ
                     </td>
                     <td className="px-4 py-2.5">
-                      <p className="font-semibold text-slate-700">{s ? s.name : '—'}</p>
-                      <p className="text-[11px] text-slate-400">{s ? `Tổ ${s.group}` : ''}</p>
-                    </td>
-                    <td className="px-4 py-2.5 text-slate-600">{rule ? rule.name : '—'}</td>
-                    <td className="px-4 py-2.5">
-                      <PointsBadge rule={rule} />
-                    </td>
-                    <td className="max-w-[220px] px-4 py-2.5 text-xs text-slate-400">
-                      {tab === 'rejected' && v.rejectedReason ? (
-                        <span className="text-rose-600 font-medium">{v.rejectedReason}</span>
-                      ) : (
-                        v.note || '—'
+                      <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-semibold ${SUBMISSION_STATUS[st].cls}`}>
+                        {SUBMISSION_STATUS[st].label}
+                      </span>
+                      {st === 'rejected' && s.rejectedReason && (
+                        <p className="mt-1 max-w-[180px] truncate text-[11px] text-rose-500" title={s.rejectedReason}>
+                          {s.rejectedReason}
+                        </p>
+                      )}
+                      {st === 'approved' && s.approvedBy && (
+                        <p className="mt-1 text-[11px] text-emerald-600">Bởi: {s.approvedBy}</p>
                       )}
                     </td>
-                    <td className="px-4 py-2.5"><Chip status={st} /></td>
-                    <td className="px-4 py-2.5 text-xs text-slate-400">
-                      {v.by || 'Nhập tay'}
-                      {v.byRole && v.byRole !== 'Học sinh' && (
-                        <span className="ml-1 rounded bg-slate-100 px-1 py-0.5 text-[10px] font-semibold text-slate-600">{v.byRole}</span>
-                      )}
+                    <td className="px-4 py-2.5">
+                      <div className="flex justify-end gap-1">
+                        {tab === 'queue' && (
+                          <>
+                            <button
+                              onClick={() => openReview(s)}
+                              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-indigo-700"
+                            >
+                              <Send size={13} /> {level === 2 ? 'Xem & duyệt' : 'Xem & chốt'}
+                            </button>
+                          </>
+                        )}
+                        {(tab === 'approved' || tab === 'rejected' || tab === 'sent') && (
+                          <button
+                            onClick={() => {
+                              setActive(s)
+                              setModalMode('view')
+                            }}
+                            className="flex items-center gap-1 rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+                          >
+                            <FileText size={13} /> Xem phiếu
+                          </button>
+                        )}
+                      </div>
                     </td>
-                    {tab === 'queue' && (
-                      <td className="px-4 py-2.5">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            onClick={() => handleApprove(v.id)}
-                            title={isAdmin ? 'Duyệt' : 'Chuyển lên giáo viên'}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                          >
-                            <Check size={14} /> {isAdmin ? 'Duyệt' : 'Gửi lên'}
-                          </button>
-                          <button
-                            onClick={() => setRejectTarget(v.id)}
-                            title="Từ chối"
-                            className="flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
-                          >
-                            <X size={14} /> Từ chối
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                    {tab === 'rejected' && level === 2 && (
-                      <td className="px-4 py-2.5">
-                        <button
-                          onClick={() => handleRestore(v.id)}
-                          className="flex items-center gap-1 rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
-                        >
-                          <RotateCcw size={14} /> Khôi phục
-                        </button>
-                      </td>
-                    )}
                   </tr>
                 )
               })}
@@ -341,14 +295,24 @@ export default function ApprovalView() {
         </div>
       </div>
 
-      {level === 2 && tab === 'drafts' && (
-        <p className="rounded-2xl bg-sky-50 p-4 text-xs font-semibold text-sky-700">
-          Nháp chưa gửi là các vi phạm do tổ trưởng ghi nhưng chưa bấm "Gửi lên duyệt". Bạn có thể duyệt trực
-          tiếp nháp này để đưa vào hệ thống. Vi phạm sẽ chuyển sang trạng thái <b>Đã duyệt</b>.
+      {level === 2 && tab === 'queue' && (
+        <p className="rounded-2xl bg-amber-50 p-4 text-xs font-semibold text-amber-700">
+          Duyệt phiếu sẽ đưa <b>tất cả dòng trong phiếu</b> vào bảng điểm và báo cáo. Điểm chỉ được tính sau khi duyệt.
         </p>
       )}
 
-      <RejectDialog open={!!rejectTarget} onClose={() => setRejectTarget(null)} onSubmit={(reason) => handleReject(rejectTarget, reason)} />
+      <SubmissionModal
+        open={!!active}
+        onClose={() => setActive(null)}
+        submission={active}
+        mode={modalMode}
+        members={active && level === 1 ? (active.scopeGroup ? students.filter((s) => s.group === active.scopeGroup) : students) : students}
+        locked={false}
+        sendLabel={sendLabel}
+        onSend={handleForward}
+        onReject={handleReject}
+        onApprove={handleForward}
+      />
     </div>
   )
 }

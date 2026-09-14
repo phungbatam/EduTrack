@@ -9,6 +9,7 @@ export const KEYS = {
   students: 'et_students',
   rules: 'et_rules',
   violations: 'et_violations',
+  submissions: 'et_submissions',
   passwords: 'et_passwords',
   lockedWeeks: 'et_locked_weeks',
   admin: 'et_admin',

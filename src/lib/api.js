@@ -4,6 +4,7 @@ const LOCAL_KEYS = {
   violations: 'et_violations',
   passwords: 'et_passwords',
   lockedWeeks: 'et_locked_weeks',
+  submissions: 'et_submissions',
   session: 'et_session',
 }
 
@@ -87,7 +88,7 @@ async function fetchWithRetry(url, options, retries = 2, delay = 800) {
   }
 }
 
-const SEED_COUNTS = { students: 45, rules: 12, violations: 0, lockedWeeks: 0 }
+const SEED_COUNTS = { students: 45, rules: 12, violations: 0, submissions: 0, lockedWeeks: 0 }
 
 export async function loadCollection(col) {
   const local = localRead(LOCAL_KEYS[col])

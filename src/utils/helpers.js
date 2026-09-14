@@ -43,6 +43,41 @@ export const VIOLATION_STATUS = {
 
 export const VIOLATION_STATUS_ORDER = ['draft', 'pendingClass', 'pendingAdmin', 'approved', 'rejected']
 
+export const SUBMISSION_STATUS = {
+  draft: { label: 'Đang soạn', cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+  pendingLeader: { label: 'Chờ lớp trưởng chốt', cls: 'bg-sky-50 text-sky-600 border-sky-200' },
+  pendingAdmin: { label: 'Chờ giáo viên duyệt', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+  approved: { label: 'Đã duyệt', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  rejected: { label: 'Trả về', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+}
+
+export const SUBMISSION_STATUS_ORDER = ['draft', 'pendingLeader', 'pendingAdmin', 'approved', 'rejected']
+
+export function submissionStatusOf(s) {
+  const st = s && s.status
+  return st && SUBMISSION_STATUS[st] ? st : 'draft'
+}
+
+// Tổ trưởng / lớp phó gom phiếu gửi LỚP TRƯỞNG chốt; Lớp trưởng gửi thẳng trang quản trị.
+export function submissionTargetFor(roleLabel) {
+  return roleLabel === 'Lớp trưởng' ? 'pendingAdmin' : 'pendingLeader'
+}
+
+export function submissionDelta(lines, ruleMap) {
+  return (lines || []).reduce((sum, l) => {
+    if (!l || !l.ruleId) return sum
+    return sum + ruleDelta(ruleMap && ruleMap[l.ruleId])
+  }, 0)
+}
+
+export function weekKeyOf(info) {
+  return info ? `${info.year}-W${info.week}` : ''
+}
+
+export function submissionWeekKey(s) {
+  return s && s.week ? weekKeyOf(s.week) : ''
+}
+
 export function statusOf(v) {
   const s = v && v.status
   return s && VIOLATION_STATUS[s] ? s : 'approved'
