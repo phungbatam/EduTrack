@@ -1,4 +1,4 @@
-import { KEYS, kvGet, kvSet } from './_lib/kv.js'
+import { KEYS, kvGet, kvSet, kvAvailable } from './_lib/kv.js'
 import { sha256 } from './_lib/hash.js'
 import { SEEDS } from './_lib/seed.js'
 import { ensureSeed } from './_lib/seed_version.js'
@@ -8,6 +8,11 @@ export const config = { runtime: 'nodejs' }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Phương thức không được hỗ trợ.' })
+  if (!kvAvailable)
+    return res.status(503).json({
+      error:
+        'Kho dữ liệu dùng chung chưa được cấu hình. Dữ liệu chỉ lưu trên từng trình duyệt (xem README để bật đồng bộ).',
+    })
 
   const { kind, account, password, code } = req.body || {}
   if (!password) return res.status(400).json({ error: 'Thiếu mật khẩu.' })

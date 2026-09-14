@@ -1,4 +1,4 @@
-import { KEYS, kvGet, kvSet } from './_lib/kv.js'
+import { KEYS, kvGet, kvSet, kvAvailable } from './_lib/kv.js'
 import { SEEDS } from './_lib/seed.js'
 import { ensureSeed } from './_lib/seed_version.js'
 import { bearer, verifyToken } from './_lib/token.js'
@@ -20,6 +20,11 @@ export default async function handler(req, res) {
     return res
       .status(400)
       .json({ error: 'Cột không hợp lệ. Chỉ chấp nhận: students, rules, violations, submissions, lockedWeeks.' })
+  if (!kvAvailable)
+    return res.status(503).json({
+      error:
+        'Kho dữ liệu dùng chung chưa được cấu hình. Dữ liệu chỉ lưu trên từng trình duyệt (xem README để bật đồng bộ).',
+    })
 
   if (req.method === 'GET') {
     await ensureSeed()

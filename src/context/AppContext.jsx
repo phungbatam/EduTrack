@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { createSeedRules, createSeedStudents, createSeedViolations } from '../data/mockData.js'
 import { weekLabel, ACADEMIC_LEVELS, ACADEMIC_ORDER } from '../utils/helpers.js'
 import * as api from '../lib/api.js'
@@ -119,12 +119,41 @@ export function AppProvider({ children }) {
     }
   }, [])
 
+  const isFromPoll = useRef(false)
+
+  useEffect(() => {
+    if (!ready) return
+    const POLL_MS = 30000
+    const keys = ['students', 'rules', 'violations', 'submissions', 'lockedWeeks']
+    const setters = { students: setStudents, rules: setRules, violations: setViolations, submissions: setSubmissions, lockedWeeks: setLockedWeeks }
+
+    const poll = async () => {
+      isFromPoll.current = true
+      try {
+        const results = await Promise.all(keys.map((k) => api.fetchCollectionRaw(k)))
+        keys.forEach((k, i) => {
+          const data = results[i]
+          if (Array.isArray(data)) {
+            setters[k]((prev) => (JSON.stringify(prev) === JSON.stringify(data) ? prev : data))
+          }
+        })
+      } catch (e) {
+        /* ignore */
+      } finally {
+        setTimeout(() => { isFromPoll.current = false }, 0)
+      }
+    }
+
+    const id = setInterval(poll, POLL_MS)
+    return () => clearInterval(id)
+  }, [ready])
+
   const adminToken = session && session.role === 'admin' ? session.token : null
 
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.students, students)
-    if (!adminToken) return
+    if (!adminToken || isFromPoll.current) return
     setSyncStatus('saving')
     api.saveCollection('students', students, adminToken).then((ok) => {
       setSyncStatus(ok ? 'synced' : 'local-only')
@@ -134,7 +163,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.rules, rules)
-    if (!adminToken) return
+    if (!adminToken || isFromPoll.current) return
     setSyncStatus('saving')
     api.saveCollection('rules', rules, adminToken).then((ok) => {
       setSyncStatus(ok ? 'synced' : 'local-only')
@@ -144,7 +173,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.violations, violations)
-    if (!adminToken) return
+    if (!adminToken || isFromPoll.current) return
     setSyncStatus('saving')
     api.saveCollection('violations', violations, adminToken).then((ok) => {
       setSyncStatus(ok ? 'synced' : 'local-only')
@@ -154,7 +183,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.submissions, submissions)
-    if (!adminToken) return
+    if (!adminToken || isFromPoll.current) return
     setSyncStatus('saving')
     api.saveCollection('submissions', submissions, adminToken).then((ok) => {
       setSyncStatus(ok ? 'synced' : 'local-only')
@@ -164,7 +193,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.lockedWeeks, lockedWeeks)
-    if (!adminToken) return
+    if (!adminToken || isFromPoll.current) return
     setSyncStatus('saving')
     api.saveCollection('lockedWeeks', lockedWeeks, adminToken).then((ok) => {
       setSyncStatus(ok ? 'synced' : 'local-only')

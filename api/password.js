@@ -1,4 +1,4 @@
-import { KEYS, kvGet, kvSet } from './_lib/kv.js'
+import { KEYS, kvGet, kvSet, kvAvailable } from './_lib/kv.js'
 import { sha256 } from './_lib/hash.js'
 import { bearer, verifyToken } from './_lib/token.js'
 
@@ -6,6 +6,11 @@ export const config = { runtime: 'nodejs' }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Phương thức không được hỗ trợ.' })
+  if (!kvAvailable)
+    return res.status(503).json({
+      error:
+        'Kho dữ liệu dùng chung chưa được cấu hình. Dữ liệu chỉ lưu trên từng trình duyệt (xem README để bật đồng bộ).',
+    })
 
   if (!(await verifyToken(bearer(req)))) {
     return res.status(401).json({ error: 'Không có quyền thực hiện thao tác này. Vui lòng đăng nhập quản trị.' })

@@ -71,7 +71,7 @@ function isHttpError(err) {
 }
 
 function isApiUnavailable(err) {
-  return !isHttpError(err) || err.status === 404 || err.status === 405
+  return !isHttpError(err) || err.status === 404 || err.status === 405 || err.status === 503
 }
 
 async function fetchWithRetry(url, options, retries = 2, delay = 800) {
@@ -88,7 +88,16 @@ async function fetchWithRetry(url, options, retries = 2, delay = 800) {
   }
 }
 
-const SEED_COUNTS = { students: 45, rules: 12, violations: 0, submissions: 0, lockedWeeks: 0 }
+export async function fetchCollectionRaw(col) {
+  try {
+    const res = await fetchWithRetry(`/api/store?col=${col}`, {})
+    const body = await parseOrThrow(res)
+    if (!Array.isArray(body.data)) throw new Error('Dữ liệu không hợp lệ')
+    return body.data
+  } catch (e) {
+    return null
+  }
+}
 
 export async function loadCollection(col) {
   const local = localRead(LOCAL_KEYS[col])
@@ -96,16 +105,8 @@ export async function loadCollection(col) {
     const res = await fetchWithRetry(`/api/store?col=${col}`, {})
     const body = await parseOrThrow(res)
     if (!Array.isArray(body.data)) throw new Error('Dữ liệu không hợp lệ')
-    const apiData = body.data
-    if (
-      Array.isArray(local) &&
-      local.length > 0 &&
-      apiData.length <= (SEED_COUNTS[col] || 0)
-    ) {
-      return local
-    }
-    localWrite(LOCAL_KEYS[col], apiData)
-    return apiData
+    localWrite(LOCAL_KEYS[col], body.data)
+    return body.data
   } catch (e) {
     if (isHttpError(e) && !isApiUnavailable(e)) throw e
     return Array.isArray(local) ? local : null

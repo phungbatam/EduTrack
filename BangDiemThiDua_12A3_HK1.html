@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lí thi đua học sinh - Lớp 12A3</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #eef2f7; color: #2c3e50; }
+  header { background: linear-gradient(135deg, #1a5276, #2980b9); color: #fff; padding: 18px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 3px 10px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 10px; }
+  header h1 { margin: 0; font-size: 1.5em; }
+  header .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+  button:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.2); }
+  .btn-primary { background: #27ae60; color: #fff; }
+  .btn-secondary { background: #ecf0f1; color: #2c3e50; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+  .btn-info { background: #3498db; color: #fff; }
+  .tabs { background: #fff; padding: 0 30px; display: flex; gap: 5px; border-bottom: 2px solid #d5dbe0; overflow-x: auto; }
+  .tab { padding: 14px 22px; cursor: pointer; border: none; background: none; font-size: 15px; font-weight: 600; color: #7f8c8d; border-bottom: 3px solid transparent; border-radius: 0; white-space: nowrap; }
+  .tab:hover { color: #2980b9; transform: none; box-shadow: none; }
+  .tab.active { color: #2980b9; border-bottom-color: #2980b9; background: #f4f9fd; }
+  main { padding: 25px 30px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
+  .card h2 { margin: 0 0 15px; font-size: 1.2em; color: #1a5276; padding-bottom: 10px; border-bottom: 2px solid #ecf0f1; }
+  .card h2 .badge { font-size: 12px; padding: 3px 10px; background: #ecf0f1; color: #7f8c8d; border-radius: 10px; margin-left: 8px; font-weight: 600; text-transform: none; }
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: #7f8c8d; margin-bottom: 5px; }
+  .form-group input, .form-group select { width: 100%; padding: 9px 11px; border: 1px solid #ced6dc; border-radius: 6px; font-size: 14px; background: #fff; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.15); }
+  .table-wrap { overflow-x: auto; border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 8px; border: 1px solid #d5dbe0; text-align: center; }
+  th { background: #2980b9; color: #fff; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #eaf4fc; }
+  td input { width: 100%; border: 1px solid transparent; background: transparent; text-align: center; font-size: 14px; padding: 4px; border-radius: 4px; font-family: inherit; }
+  td input:hover { border-color: #ced6dc; background: #fff; }
+  td input:focus { outline: none; border-color: #2980b9; background: #fff; box-shadow: 0 0 0 3px rgba(41,128,185,0.15); }
+  .good { color: #27ae60; font-weight: 700; }
+  .fair { color: #2980b9; font-weight: 700; }
+  .average { color: #e67e22; font-weight: 700; }
+  .weak { color: #c0392b; font-weight: 700; }
+  .action-btn { padding: 5px 10px; font-size: 12px; margin: 0 2px; border-radius: 4px; }
+  .violation-log-table th { background: #00B050 !important; color: #fff; font-weight: 700; text-transform: uppercase; font-size: 13px; }
+  .violation-log-table td { font-size: 13px; padding: 8px 6px; }
+  .violation-log-table .diem-tru { color: #c0392b; font-weight: 700; }
+  .violation-log-table .title-row th { background: #00B050 !important; font-size: 15px; padding: 12px; letter-spacing: 1px; }
+  .filter-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; padding: 12px 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #00B050; }
+  .filter-row label { font-size: 13px; font-weight: 600; color: #555; }
+  .filter-row select { padding: 7px 12px; border: 1px solid #ced6dc; border-radius: 6px; font-size: 14px; background: #fff; font-weight: 600; }
+  .nhom-hoc-tap { background: #e8f4fb !important; color: #2980b9; font-weight: 600; }
+  .nhom-ne-nep { background: #fef5e7 !important; color: #e67e22; font-weight: 600; }
+  .nhom-khac { background: #f4ecf7 !important; color: #8e44ad; font-weight: 600; }
+  .ai-comment { background: linear-gradient(135deg, #f5ebff 0%, #e7f0ff 100%); border-left: 4px solid #8e44ad; padding: 18px 22px; border-radius: 8px; margin-top: 15px; font-size: 14px; line-height: 1.75; }
+  .ai-comment::before { content: "🤖 Trợ lý AI phân tích"; display: block; font-weight: 700; color: #8e44ad; margin-bottom: 12px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  .ai-comment p { margin: 0 0 10px; }
+  .ai-comment p:last-child { margin-bottom: 0; }
+  .ai-comment b { color: #6c3483; }
+  .ai-label { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: #8e44ad; padding: 2px 8px; border-radius: 10px; margin-right: 6px; letter-spacing: 0.5px; vertical-align: middle; }
+  #toast { position: fixed; bottom: 25px; right: 25px; background: #27ae60; color: #fff; padding: 14px 22px; border-radius: 8px; font-weight: 600; box-shadow: 0 5px 20px rgba(0,0,0,0.25); opacity: 0; transform: translateY(20px); transition: all 0.3s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.error { background: #e74c3c; }
+  #toast.warn { background: #f39c12; }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #fff; border-radius: 10px; padding: 25px; max-width: 500px; width: 100%; }
+  .modal h3 { margin: 0 0 15px; color: #1a5276; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); border-left: 4px solid #2980b9; }
+  .stat-card.green { border-left-color: #27ae60; }
+  .stat-card.orange { border-left-color: #e67e22; }
+  .stat-card.red { border-left-color: #e74c3c; }
+  .stat-card .label { font-size: 13px; color: #7f8c8d; margin-bottom: 5px; }
+  .stat-card .value { font-size: 1.8em; font-weight: 700; color: #2c3e50; }
+  .empty-state { text-align: center; padding: 25px; color: #95a5a6; font-style: italic; font-size: 14px; background: #f8fafc; border-radius: 8px; }
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    header, .tabs, .toolbar, .action-btn, .no-print, .filter-row { display: none !important; }
+    body { background: #fff; font-size: 11px; }
+    main { padding: 0; }
+    .panel { display: none !important; }
+    .panel.active { display: block !important; }
+    .card { box-shadow: none; padding: 8px 0; margin-bottom: 8px; page-break-inside: avoid; }
+    .card h2 { font-size: 13px; padding-bottom: 5px; margin-bottom: 8px; }
+    table { font-size: 10px; }
+    th, td { padding: 4px 3px !important; }
+    th { background: #2980b9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #fff !important; }
+    .violation-log-table th, .violation-log-table .title-row th { background: #00B050 !important; }
+    .stats { display: none !important; }
+    .ai-comment { background: #f5ebff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; line-height: 1.5; }
+    textarea { display: none !important; }
+    .table-wrap { overflow: visible !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Quản lí thi đua — Lớp 12A3</h1>
+  <div class="toolbar">
+    <button class="btn-secondary" onclick="exportData()">💾 Xuất dữ liệu</button>
+    <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📂 Nhập dữ liệu</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn-info" onclick="printSummary()">🖨️ In tổng kết</button>
+    <button class="btn-danger" onclick="resetAll()">🗑️ Xóa hết</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="students">👥 Học sinh</button>
+  <button class="tab" data-tab="week1">📅 Tuần 1</button>
+  <button class="tab" data-tab="week2">📅 Tuần 2</button>
+  <button class="tab" data-tab="week3">📅 Tuần 3</button>
+  <button class="tab" data-tab="week4">📅 Tuần 4</button>
+  <button class="tab" data-tab="violations">📋 Nhật ký vi phạm</button>
+  <button class="tab" data-tab="summary">📊 Tổng kết tháng</button>
+</div>
+
+<main>
+
+  <section id="tab-students" class="panel active">
+    <div class="card">
+      <h2>➕ Thêm học sinh mới</h2>
+      <div class="form-row">
+        <div class="form-group"><label>Mã HS</label><input type="text" id="add-ma" placeholder="VD: HS12"></div>
+        <div class="form-group"><label>Họ và tên</label><input type="text" id="add-ten" placeholder="VD: Nguyễn Văn A"></div>
+        <div class="form-group"><label>Lớp</label><input type="text" id="add-lop" value="12A3"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn-primary" style="width:100%" onclick="addStudent()">Thêm học sinh</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>👥 Danh sách học sinh (<span id="count-students">0</span>)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:50px">STT</th><th style="width:80px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:80px">Lớp</th><th style="width:140px">Hành động</th></tr></thead>
+          <tbody id="tbody-students"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TUẦN 1 -->
+  <section id="tab-week1" class="panel">
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 1</h2>
+      <p style="color:#7f8c8d;font-size:13px;margin:0 0 15px">💡 Điểm trừ nhập số âm (VD: -1). Điểm cộng nhập số dương.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:50px">STT</th><th style="width:80px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:70px">Lớp</th><th style="width:90px">Điểm trừ</th><th style="width:90px">Điểm cộng</th><th style="width:90px">Tổng điểm</th><th style="width:90px">Vi phạm</th><th style="width:90px">Khen thưởng</th><th style="width:100px">Xếp loại</th></tr></thead>
+          <tbody id="tbody-week1"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📝 Nhận xét Tuần 1</h2>
+      <textarea id="note-week1" rows="4" style="width:100%;padding:10px;border:1px solid #ced6dc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical" placeholder="Nhập nhận xét cho tuần 1..."></textarea>
+      <div class="ai-comment" id="ai-week1"></div>
+    </div>
+    <div class="card">
+      <h2>⚠️ Vi phạm nội quy Tuần 1 <span class="badge" id="badge-v-week1">0</span></h2>
+      <div class="table-wrap" id="wrap-v-week1">
+        <table class="violation-log-table">
+          <thead>
+            <tr class="title-row"><th colspan="11">VI PHẠM NỘI QUY TUẦN 1</th></tr>
+            <tr>
+              <th style="width:50px">STT</th><th style="width:105px">Ngày</th><th style="width:75px">Mã HS</th>
+              <th style="width:100px">Tiết</th><th style="width:60px">Thứ</th>
+              <th style="text-align:left">Họ và tên</th><th style="width:65px">Lớp</th>
+              <th style="width:130px">Loại vi phạm</th><th style="width:95px">Nhóm</th>
+              <th style="width:75px">Điểm trừ</th><th style="width:120px">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-v-week1"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TUẦN 2 -->
+  <section id="tab-week2" class="panel">
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 2</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:50px">STT</th><th style="width:80px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:70px">Lớp</th><th style="width:90px">Điểm trừ</th><th style="width:90px">Điểm cộng</th><th style="width:90px">Tổng điểm</th><th style="width:90px">Vi phạm</th><th style="width:90px">Khen thưởng</th><th style="width:100px">Xếp loại</th></tr></thead>
+          <tbody id="tbody-week2"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📝 Nhận xét Tuần 2</h2>
+      <textarea id="note-week2" rows="4" style="width:100%;padding:10px;border:1px solid #ced6dc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical" placeholder="Nhập nhận xét cho tuần 2..."></textarea>
+      <div class="ai-comment" id="ai-week2"></div>
+    </div>
+    <div class="card">
+      <h2>⚠️ Vi phạm nội quy Tuần 2 <span class="badge" id="badge-v-week2">0</span></h2>
+      <div class="table-wrap" id="wrap-v-week2">
+        <table class="violation-log-table">
+          <thead>
+            <tr class="title-row"><th colspan="11">VI PHẠM NỘI QUY TUẦN 2</th></tr>
+            <tr>
+              <th style="width:50px">STT</th><th style="width:105px">Ngày</th><th style="width:75px">Mã HS</th>
+              <th style="width:100px">Tiết</th><th style="width:60px">Thứ</th>
+              <th style="text-align:left">Họ và tên</th><th style="width:65px">Lớp</th>
+              <th style="width:130px">Loại vi phạm</th><th style="width:95px">Nhóm</th>
+              <th style="width:75px">Điểm trừ</th><th style="width:120px">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-v-week2"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TUẦN 3 -->
+  <section id="tab-week3" class="panel">
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 3</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:50px">STT</th><th style="width:80px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:70px">Lớp</th><th style="width:90px">Điểm trừ</th><th style="width:90px">Điểm cộng</th><th style="width:90px">Tổng điểm</th><th style="width:90px">Vi phạm</th><th style="width:90px">Khen thưởng</th><th style="width:100px">Xếp loại</th></tr></thead>
+          <tbody id="tbody-week3"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📝 Nhận xét Tuần 3</h2>
+      <textarea id="note-week3" rows="4" style="width:100%;padding:10px;border:1px solid #ced6dc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical" placeholder="Nhập nhận xét cho tuần 3..."></textarea>
+      <div class="ai-comment" id="ai-week3"></div>
+    </div>
+    <div class="card">
+      <h2>⚠️ Vi phạm nội quy Tuần 3 <span class="badge" id="badge-v-week3">0</span></h2>
+      <div class="table-wrap" id="wrap-v-week3">
+        <table class="violation-log-table">
+          <thead>
+            <tr class="title-row"><th colspan="11">VI PHẠM NỘI QUY TUẦN 3</th></tr>
+            <tr>
+              <th style="width:50px">STT</th><th style="width:105px">Ngày</th><th style="width:75px">Mã HS</th>
+              <th style="width:100px">Tiết</th><th style="width:60px">Thứ</th>
+              <th style="text-align:left">Họ và tên</th><th style="width:65px">Lớp</th>
+              <th style="width:130px">Loại vi phạm</th><th style="width:95px">Nhóm</th>
+              <th style="width:75px">Điểm trừ</th><th style="width:120px">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-v-week3"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TUẦN 4 -->
+  <section id="tab-week4" class="panel">
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 4</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:50px">STT</th><th style="width:80px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:70px">Lớp</th><th style="width:90px">Điểm trừ</th><th style="width:90px">Điểm cộng</th><th style="width:90px">Tổng điểm</th><th style="width:90px">Vi phạm</th><th style="width:90px">Khen thưởng</th><th style="width:100px">Xếp loại</th></tr></thead>
+          <tbody id="tbody-week4"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📝 Nhận xét Tuần 4</h2>
+      <textarea id="note-week4" rows="4" style="width:100%;padding:10px;border:1px solid #ced6dc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical" placeholder="Nhập nhận xét cho tuần 4..."></textarea>
+      <div class="ai-comment" id="ai-week4"></div>
+    </div>
+    <div class="card">
+      <h2>⚠️ Vi phạm nội quy Tuần 4 <span class="badge" id="badge-v-week4">0</span></h2>
+      <div class="table-wrap" id="wrap-v-week4">
+        <table class="violation-log-table">
+          <thead>
+            <tr class="title-row"><th colspan="11">VI PHẠM NỘI QUY TUẦN 4</th></tr>
+            <tr>
+              <th style="width:50px">STT</th><th style="width:105px">Ngày</th><th style="width:75px">Mã HS</th>
+              <th style="width:100px">Tiết</th><th style="width:60px">Thứ</th>
+              <th style="text-align:left">Họ và tên</th><th style="width:65px">Lớp</th>
+              <th style="width:130px">Loại vi phạm</th><th style="width:95px">Nhóm</th>
+              <th style="width:75px">Điểm trừ</th><th style="width:120px">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-v-week4"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- NHẬT KÝ VI PHẠM -->
+  <section id="tab-violations" class="panel">
+    <div class="card">
+      <h2>➕ Ghi nhận vi phạm mới</h2>
+      <div class="form-row">
+        <div class="form-group"><label>Tuần</label>
+          <select id="v-week"><option value="1">Tuần 1</option><option value="2">Tuần 2</option><option value="3">Tuần 3</option><option value="4">Tuần 4</option></select>
+        </div>
+        <div class="form-group"><label>Ngày</label><input type="date" id="v-ngay"></div>
+        <div class="form-group"><label>Mã HS</label><select id="v-ma"></select></div>
+        <div class="form-group"><label>Tiết</label><input type="text" id="v-tiet" placeholder="VD: Ngữ Văn"></div>
+        <div class="form-group"><label>Thứ</label>
+          <select id="v-thu"><option value="2">Thứ 2</option><option value="3">Thứ 3</option><option value="4">Thứ 4</option><option value="5">Thứ 5</option><option value="6">Thứ 6</option><option value="7">Thứ 7</option><option value="8">Chủ nhật</option></select>
+        </div>
+        <div class="form-group"><label>Loại vi phạm</label><input type="text" id="v-loai" placeholder="VD: Không soạn bài"></div>
+        <div class="form-group"><label>Nhóm</label>
+          <select id="v-nhom"><option value="Học tập">Học tập</option><option value="Nề nếp">Nề nếp</option><option value="Khác">Khác</option></select>
+        </div>
+        <div class="form-group"><label>Điểm trừ</label><input type="number" id="v-diem" value="1" min="0"></div>
+        <div class="form-group"><label>Ghi chú</label><input type="text" id="v-ghichu" placeholder="(không bắt buộc)"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn-primary" style="width:100%" onclick="addViolation()">➕ Thêm vi phạm</button></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:#555;cursor:pointer">
+        <input type="checkbox" id="v-sync" checked style="width:auto;transform:scale(1.2)">
+        <span>Đồng bộ số lần vi phạm và điểm trừ vào bảng điểm tuần tương ứng</span>
+      </label>
+    </div>
+    <div class="card">
+      <div class="filter-row">
+        <label>🔍 Xem:</label>
+        <select id="v-filter-week" onchange="renderViolationLog()">
+          <option value="all">Tất cả các tuần</option><option value="1">Tuần 1</option><option value="2">Tuần 2</option><option value="3">Tuần 3</option><option value="4">Tuần 4</option>
+        </select>
+        <label>Nhóm:</label>
+        <select id="v-filter-nhom" onchange="renderViolationLog()">
+          <option value="all">Tất cả</option><option value="Học tập">Học tập</option><option value="Nề nếp">Nề nếp</option><option value="Khác">Khác</option>
+        </select>
+        <span style="margin-left:auto;font-weight:600;color:#c0392b" id="v-total-info"></span>
+      </div>
+      <div class="table-wrap" id="v-table-wrap">
+        <table class="violation-log-table">
+          <thead>
+            <tr class="title-row"><th colspan="12" id="v-title">VI PHẠM NỘI QUY</th></tr>
+            <tr>
+              <th style="width:50px">STT</th><th style="width:105px">Ngày</th><th style="width:75px">Mã HS</th>
+              <th style="width:100px">Tiết</th><th style="width:60px">Thứ</th>
+              <th style="text-align:left">Họ và tên</th><th style="width:65px">Lớp</th>
+              <th style="width:130px">Loại vi phạm</th><th style="width:95px">Nhóm</th>
+              <th style="width:75px">Điểm trừ</th><th style="width:120px">Ghi chú</th><th style="width:90px">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-violations"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TỔNG KẾT -->
+  <section id="tab-summary" class="panel">
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#1a5276,#2980b9);color:#fff">
+      <h2 style="color:#fff;border-bottom-color:rgba(255,255,255,0.2);margin-bottom:5px;font-size:1.5em">📊 BÁO CÁO TỔNG KẾT THÁNG</h2>
+      <p style="margin:5px 0 0;font-size:14px;opacity:0.9">Lớp 12A3 — Tổng hợp 4 tuần thi đua</p>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="label">Tổng số học sinh</div><div class="value" id="stat-total">0</div></div>
+      <div class="stat-card green"><div class="label">Xếp loại Tốt</div><div class="value" id="stat-good">0</div></div>
+      <div class="stat-card orange"><div class="label">Khá / Trung bình</div><div class="value" id="stat-mid">0</div></div>
+      <div class="stat-card red"><div class="label">Yếu / Kém</div><div class="value" id="stat-bad">0</div></div>
+    </div>
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 1 <span class="badge">Tóm tắt</span></h2>
+      <div class="table-wrap"><table style="font-size:13px">
+        <thead><tr><th style="width:45px">STT</th><th style="width:70px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th><th style="width:70px">Điểm trừ</th><th style="width:70px">Điểm cộng</th><th style="width:70px">Tổng</th><th style="width:70px">Vi phạm</th><th style="width:80px">Khen thưởng</th><th style="width:85px">Xếp loại</th></tr></thead>
+        <tbody id="sum-tbody-week1"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 2 <span class="badge">Tóm tắt</span></h2>
+      <div class="table-wrap"><table style="font-size:13px">
+        <thead><tr><th style="width:45px">STT</th><th style="width:70px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th><th style="width:70px">Điểm trừ</th><th style="width:70px">Điểm cộng</th><th style="width:70px">Tổng</th><th style="width:70px">Vi phạm</th><th style="width:80px">Khen thưởng</th><th style="width:85px">Xếp loại</th></tr></thead>
+        <tbody id="sum-tbody-week2"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 3 <span class="badge">Tóm tắt</span></h2>
+      <div class="table-wrap"><table style="font-size:13px">
+        <thead><tr><th style="width:45px">STT</th><th style="width:70px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th><th style="width:70px">Điểm trừ</th><th style="width:70px">Điểm cộng</th><th style="width:70px">Tổng</th><th style="width:70px">Vi phạm</th><th style="width:80px">Khen thưởng</th><th style="width:85px">Xếp loại</th></tr></thead>
+        <tbody id="sum-tbody-week3"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>📅 Bảng điểm Tuần 4 <span class="badge">Tóm tắt</span></h2>
+      <div class="table-wrap"><table style="font-size:13px">
+        <thead><tr><th style="width:45px">STT</th><th style="width:70px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th><th style="width:70px">Điểm trừ</th><th style="width:70px">Điểm cộng</th><th style="width:70px">Tổng</th><th style="width:70px">Vi phạm</th><th style="width:80px">Khen thưởng</th><th style="width:85px">Xếp loại</th></tr></thead>
+        <tbody id="sum-tbody-week4"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>📊 Bảng tổng kết tháng (Tuần 1 → Tuần 4)</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th style="width:45px">STT</th><th style="width:70px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th><th style="width:85px">Tổng điểm trừ</th><th style="width:85px">Tổng điểm cộng</th><th style="width:85px">Tổng vi phạm</th><th style="width:95px">Tổng khen thưởng</th><th style="width:95px">Điểm TB tháng</th><th style="width:90px">Xếp loại HK</th></tr></thead>
+        <tbody id="tbody-summary"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>📋 Nhật ký vi phạm chi tiết cả tháng</h2>
+      <div class="table-wrap"><table class="violation-log-table">
+        <thead>
+          <tr class="title-row"><th colspan="10">VI PHẠM NỘI QUY THÁNG</th></tr>
+          <tr>
+            <th style="width:50px">STT</th><th style="width:105px">Ngày</th><th style="width:75px">Mã HS</th>
+            <th style="width:100px">Tiết</th><th style="width:60px">Thứ</th>
+            <th style="text-align:left">Họ và tên</th><th style="width:65px">Lớp</th>
+            <th style="width:130px">Loại vi phạm</th><th style="width:95px">Nhóm</th><th style="width:75px">Điểm trừ</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-violations-summary"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>⚠️ Bảng tổng hợp vi phạm theo học sinh <span class="badge" id="violation-count-badge">0</span></h2>
+      <div class="table-wrap" id="violation-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:45px">STT</th><th style="width:70px">Mã HS</th><th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th>
+            <th style="width:70px">Tuần 1</th><th style="width:70px">Tuần 2</th><th style="width:70px">Tuần 3</th><th style="width:70px">Tuần 4</th>
+            <th style="width:90px">Tổng vi phạm</th><th style="width:95px">Tổng điểm trừ</th><th style="width:100px">Mức độ</th>
+          </tr></thead>
+          <tbody id="tbody-violation"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📝 Nhận xét chung cả tháng</h2>
+      <textarea id="note-summary" rows="5" style="width:100%;padding:10px;border:1px solid #ced6dc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical" placeholder="Nhập nhận xét tổng kết tháng..."></textarea>
+      <div class="ai-comment" id="ai-summary"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3>✏️ Sửa thông tin học sinh</h3>
+    <div class="form-group" style="margin-bottom:12px"><label>Mã HS</label><input type="text" id="edit-ma"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>Họ và tên</label><input type="text" id="edit-ten"></div>
+    <div class="form-group" style="margin-bottom:20px"><label>Lớp</label><input type="text" id="edit-lop"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="closeEditModal()">Hủy</button>
+      <button class="btn-primary" onclick="saveEditStudent()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'thidua_12A3_data_v2';
+
+let state = { students: [], weeks: {1:{},2:{},3:{},4:{}}, notes: {1:'',2:'',3:'',4:'',summary:''}, violationLogs: [] };
+let editMaHS = null;
+
+function defaultData() {
+  const list = [
+    {ma:'HS01', ten:'Cao Thị Ánh Ngọc',       lop:'12A3'},
+    {ma:'HS10', ten:'Ksor Ninh',              lop:'12A3'},
+    {ma:'HS08', ten:'Lê Thị Thanh Huệ',       lop:'12A3'},
+    {ma:'HS05', ten:'Nguyễn Minh Tuấn',       lop:'12A3'},
+    {ma:'HS07', ten:'Nguyễn Ngọc Triều Tiên', lop:'12A3'},
+    {ma:'HS09', ten:'Phùng Bá Tâm',           lop:'12A3'},
+    {ma:'HS02', ten:'Phạm Như Ngọc',          lop:'12A3'},
+    {ma:'HS04', ten:'Phạm Thị Kiều Nhi',      lop:'12A3'},
+    {ma:'HS03', ten:'Trần Triệu Vy',          lop:'12A3'},
+    {ma:'HS11', ten:'Ksor Sma',               lop:'12A3'},
+    {ma:'HS06', ten:'Bùi Anh Tuấn',           lop:'12A3'}
+  ];
+  const week1 = {
+    HS01: {diemTru:0, diemCong:0, viPham:0, khenThuong:0},
+    HS10: {diemTru:0, diemCong:0, viPham:0, khenThuong:0},
+    HS08: {diemTru:0, diemCong:0, viPham:0, khenThuong:0},
+    HS05: {diemTru:-1, diemCong:0, viPham:1, khenThuong:0},
+    HS07: {diemTru:0, diemCong:1, viPham:0, khenThuong:1},
+    HS09: {diemTru:-3, diemCong:3, viPham:1, khenThuong:3},
+    HS02: {diemTru:0, diemCong:0, viPham:0, khenThuong:0},
+    HS04: {diemTru:0, diemCong:0, viPham:0, khenThuong:0},
+    HS03: {diemTru:0, diemCong:0, viPham:0, khenThuong:0},
+    HS11: {diemTru:-1, diemCong:0, viPham:1, khenThuong:0},
+    HS06: {diemTru:0, diemCong:2, viPham:0, khenThuong:2}
+  };
+  const empty = () => { const w = {}; list.forEach(s => w[s.ma] = {diemTru:0, diemCong:0, viPham:0, khenThuong:0}); return w; };
+  const violationLogs = [
+    {id:'v1', week:1, ngay:'2026-08-09', ma:'HS05', tiet:'Ngữ Văn', thu:3, loaiViPham:'Không soạn bài', nhom:'Học tập', diemTru:1, ghiChu:''},
+    {id:'v2', week:1, ngay:'2026-08-09', ma:'HS11', tiet:'Ngữ Văn', thu:3, loaiViPham:'Không soạn bài', nhom:'Học tập', diemTru:1, ghiChu:''},
+    {id:'v3', week:1, ngay:'2026-09-11', ma:'HS09', tiet:'Sinh hoạt 15\'', thu:6, loaiViPham:'Đi trễ', nhom:'Nề nếp', diemTru:3, ghiChu:''}
+  ];
+  return {
+    students: list,
+    weeks: { 1: week1, 2: empty(), 3: empty(), 4: empty() },
+    notes: { 1: 'HS06 có phát biểu xây dựng bài tương đối tích cực đáng tuyên dương\nHS07 có phát biểu xây dựng bài\nHS09 Có tích cực phát biểu xây dựng đầy đủ', 2: '', 3: '', 4: '', summary: '' },
+    violationLogs
+  };
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = JSON.parse(raw);
+      if (!state.weeks) state.weeks = {1:{},2:{},3:{},4:{}};
+      if (!state.notes) state.notes = {1:'',2:'',3:'',4:'',summary:''};
+      if (!Array.isArray(state.violationLogs)) state.violationLogs = [];
+      if (!state.students) state.students = [];
+    } else {
+      state = defaultData();
+      saveData();
+    }
+  } catch (e) {
+    console.warn('Lỗi đọc dữ liệu:', e);
+    state = defaultData();
+  }
+}
+
+function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { toast('Không thể lưu dữ liệu', 'error'); }
+}
+
+function getWeekData(week, ma) {
+  if (!state.weeks[week]) state.weeks[week] = {};
+  if (!state.weeks[week][ma]) state.weeks[week][ma] = {diemTru:0, diemCong:0, viPham:0, khenThuong:0};
+  return state.weeks[week][ma];
+}
+
+function tinhTongDiem(w) { return 100 + Number(w.diemCong || 0) + Number(w.diemTru || 0); }
+
+function xepLoai(d) {
+  if (d >= 90) return 'Tốt';
+  if (d >= 80) return 'Khá';
+  if (d >= 65) return 'Trung bình';
+  if (d >= 50) return 'Yếu';
+  return 'Kém';
+}
+function classXepLoai(l) {
+  if (l === 'Tốt') return 'good';
+  if (l === 'Khá') return 'fair';
+  if (l === 'Trung bình') return 'average';
+  return 'weak';
+}
+function getStudentByMa(ma) { return state.students.find(s => s.ma === ma); }
+
+/* ============================================================
+   AI 2.0 — PHÂN TÍCH CHUYÊN SÂU (có try/catch chống lỗi)
+   ============================================================ */
+function joinNames(names) {
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return names[0] + ' và ' + names[1];
+  return names.slice(0, -1).join(', ') + ' và ' + names[names.length - 1];
+}
+
+function thuLabelShort(n) {
+  const m = {2:'Thứ 2', 3:'Thứ 3', 4:'Thứ 4', 5:'Thứ 5', 6:'Thứ 6', 7:'Thứ 7', 8:'Chủ nhật'};
+  return m[n] || '';
+}
+
+function analyzeWeekDeep(week) {
+  const rows = state.students.map(s => {
+    const w = getWeekData(week, s.ma);
+    return { ma: s.ma, ten: s.ten, lop: s.lop,
+      diemTru: Number(w.diemTru || 0), diemCong: Number(w.diemCong || 0),
+      viPham: Number(w.viPham || 0), khenThuong: Number(w.khenThuong || 0),
+      tong: tinhTongDiem(w) };
+  });
+  const weekLogs = (state.violationLogs || []).filter(v => Number(v.week) === week);
+  const loaiMap = {};
+  weekLogs.forEach(v => { loaiMap[v.loaiViPham] = (loaiMap[v.loaiViPham] || 0) + 1; });
+  const topLoai = Object.entries(loaiMap).sort((a,b) => b[1] - a[1]);
+  const nhomMap = {};
+  weekLogs.forEach(v => { nhomMap[v.nhom] = (nhomMap[v.nhom] || 0) + 1; });
+  const thuMap = {};
+  weekLogs.forEach(v => { thuMap[v.thu] = (thuMap[v.thu] || 0) + 1; });
+  const topThu = Object.entries(thuMap).sort((a,b) => b[1] - a[1]);
+  const coViPham = rows.filter(r => r.viPham > 0);
+  const coKhenThuong = rows.filter(r => r.khenThuong > 0);
+  const tongViPham = rows.reduce((s,r) => s + r.viPham, 0);
+  const tongKhenThuong = rows.reduce((s,r) => s + r.khenThuong, 0);
+  const tongDiemTru = rows.reduce((s,r) => s + Math.abs(r.diemTru), 0);
+  const diemTB = rows.reduce((s,r) => s + r.tong, 0) / rows.length;
+  let xuHuong = 'khong-co', chenhLechDiem = 0, chenhLechVP = 0, diemTBPrev = null;
+  if (week > 1) {
+    const prevRows = state.students.map(s => { const w = getWeekData(week-1, s.ma); return { tong: tinhTongDiem(w), viPham: Number(w.viPham || 0) }; });
+    diemTBPrev = prevRows.reduce((a,r) => a + r.tong, 0) / prevRows.length;
+    const soVPPrev = prevRows.reduce((a,r) => a + r.viPham, 0);
+    chenhLechDiem = diemTB - diemTBPrev;
+    chenhLechVP = tongViPham - soVPPrev;
+    if (chenhLechDiem > 0.5) xuHuong = 'tang';
+    else if (chenhLechDiem < -0.5) xuHuong = 'giam';
+    else xuHuong = 'on-dinh';
+  }
+  const tienBo = [], tutDoc = [];
+  if (week > 1) {
+    rows.forEach(r => {
+      const prevTong = tinhTongDiem(getWeekData(week-1, r.ma));
+      const delta = r.tong - prevTong;
+      if (delta >= 2) tienBo.push({...r, delta});
+      else if (delta <= -2) tutDoc.push({...r, delta});
+    });
+    tienBo.sort((a,b) => b.delta - a.delta);
+    tutDoc.sort((a,b) => a.delta - b.delta);
+  }
+  const logCountByMa = {};
+  weekLogs.forEach(v => { logCountByMa[v.ma] = (logCountByMa[v.ma] || 0) + 1; });
+  const topLogVP = Object.entries(logCountByMa).sort((a,b) => b[1]-a[1]).slice(0,3).map(([ma,c]) => {
+    const hs = getStudentByMa(ma);
+    return { ma, ten: hs ? hs.ten : ma, count: c };
+  });
+  return { rows, weekLogs, topLoai, nhomMap, topThu, coViPham, coKhenThuong,
+    tongViPham, tongKhenThuong, tongDiemTru, diemTB, diemTBPrev, chenhLechDiem, chenhLechVP,
+    xuHuong, tienBo, tutDoc, topLogVP };
+}
+
+function buildWeekComment(week) {
+  try {
+    if (!state.students || state.students.length === 0) return '<p>Chưa có dữ liệu học sinh để phân tích.</p>';
+    const a = analyzeWeekDeep(week);
+    const parts = [];
+    const total = a.rows.length;
+
+    let overviewLabel;
+    if (a.coViPham.length === 0 && a.coKhenThuong.length === 0) overviewLabel = 'tuần yên ắng';
+    else if (a.coViPham.length === 0) overviewLabel = 'tuần tích cực';
+    else if (a.coViPham.length <= 2) overviewLabel = 'tuần ổn định';
+    else if (a.coViPham.length <= 4) overviewLabel = 'tuần có vấn đề';
+    else overviewLabel = 'tuần đáng lo ngại';
+
+    let ov = `📊 <span class="ai-label">TỔNG QUAN</span> <b>Tuần ${week}</b> — xếp loại <b>${overviewLabel}</b>. `;
+    ov += `${a.coViPham.length}/${total} học sinh vi phạm (tổng <b>${a.tongViPham} lỗi</b>, <b>${a.tongDiemTru} điểm trừ</b>), `;
+    ov += `${a.coKhenThuong.length}/${total} học sinh được khen thưởng với <b>${a.tongKhenThuong} lượt</b>. `;
+    ov += `Điểm thi đua trung bình lớp: <b>${Math.round(a.diemTB*100)/100}</b>.`;
+    if (week > 1) {
+      if (a.xuHuong === 'tang') {
+        ov += ` So với Tuần ${week-1}, điểm TB <b>tăng ${Math.round(a.chenhLechDiem*100)/100} điểm</b>`;
+        ov += a.chenhLechVP < 0 ? ` và số vi phạm <b>giảm ${Math.abs(a.chenhLechVP)} lần</b> — tín hiệu rất tích cực! 🎉`
+          : a.chenhLechVP > 0 ? ` nhưng số vi phạm lại <b>tăng ${a.chenhLechVP} lần</b>.` : `.`;
+      } else if (a.xuHuong === 'giam') {
+        ov += ` So với Tuần ${week-1}, điểm TB <b>giảm ${Math.abs(Math.round(a.chenhLechDiem*100)/100)} điểm</b>`;
+        ov += a.chenhLechVP > 0 ? ` và số vi phạm <b>tăng ${a.chenhLechVP} lần</b>. Dấu hiệu cảnh báo.` : `.`;
+      } else {
+        ov += ` So với Tuần ${week-1}, phong độ <b>ổn định</b>.`;
+      }
+    } else {
+      ov += ` Đây là tuần đầu tiên của tháng — làm mốc so sánh.`;
+    }
+    parts.push(ov);
+
+    if (a.weekLogs.length > 0) {
+      const loaiStr = a.topLoai.slice(0,3).map(([l,c]) => `<b>"${escapeHtml(l)}"</b> (${c})`).join(', ');
+      let vp = `🔍 <span class="ai-label">PHÂN TÍCH VI PHẠM</span> Ghi nhận <b>${a.weekLogs.length} bản ghi</b> chi tiết. `;
+      vp += a.topLoai.length === 1 ? `Toàn bộ đều là ${loaiStr}. ` : `Lỗi phổ biến nhất: ${loaiStr}. `;
+      const nhomStr = Object.entries(a.nhomMap).sort((a,b) => b[1]-a[1]).map(([n,c]) => `<b>${escapeHtml(n)}</b> (${c})`).join(', ');
+      vp += `Nhóm: ${nhomStr}. `;
+      if (a.topThu.length > 0) vp += `Tập trung vào ${a.topThu.map(([t,c]) => `${thuLabelShort(Number(t))} (${c})`).join(', ')}.`;
+      parts.push(vp);
+
+      const nhomHT = a.nhomMap['Học tập'] || 0;
+      const nhomNN = a.nhomMap['Nề nếp'] || 0;
+      if (nhomHT > nhomNN && nhomHT >= 2) {
+        parts.push(`💡 <span class="ai-label">NHẬN ĐỊNH</span> Vi phạm chủ yếu thuộc <b>nhóm Học tập</b> (${nhomHT} lần) — có thể do khối lượng bài tập tăng hoặc ý thức chuẩn bị bài ở nhà chưa cao.`);
+      } else if (nhomNN > nhomHT && nhomNN >= 2) {
+        parts.push(`💡 <span class="ai-label">NHẬN ĐỊNH</span> Vi phạm chủ yếu thuộc <b>nhóm Nề nếp</b> (${nhomNN} lần) — liên quan giờ giấc, tác phong.`);
+      }
+    }
+
+    if (a.coKhenThuong.length > 0) {
+      const topKT = [...a.coKhenThuong].sort((a,b) => b.khenThuong - a.khenThuong).slice(0,3);
+      const names = topKT.map(r => `<b>${escapeHtml(r.ten)}</b>`);
+      let k = `👏 <span class="ai-label">ĐIỂM SÁNG</span> `;
+      if (a.coKhenThuong.length === 1) {
+        k += `<b>${escapeHtml(a.coKhenThuong[0].ten)}</b> là ngôi sao duy nhất với <b>${a.coKhenThuong[0].khenThuong} lượt</b>. Cần biểu dương trước lớp.`;
+      } else if (a.coKhenThuong.length <= 3) {
+        k += `Sự tích cực của ${joinNames(names)} — tổng <b>${a.tongKhenThuong} lượt khen thưởng</b>.`;
+      } else {
+        k += `<b>${a.coKhenThuong.length} học sinh</b> được khen thưởng — phong trào lan tỏa tốt. Nổi bật: ${joinNames(names)}.`;
+      }
+      parts.push(k);
+    } else if (a.coViPham.length > 0) {
+      parts.push(`💡 <span class="ai-label">ĐIỂM SÁNG</span> Tuần này chưa có lượt khen thưởng nào — lớp đang "im lặng" trong giờ học.`);
+    }
+
+    if (a.tienBo.length > 0) {
+      const list = a.tienBo.slice(0,3).map(r => `<b>${escapeHtml(r.ten)}</b> (+${r.delta})`).join(', ');
+      parts.push(`🚀 <span class="ai-label">TIẾN BỘ</span> ${list} có bước nhảy vọt so với tuần trước.`);
+    }
+    if (a.tutDoc.length > 0) {
+      const list = a.tutDoc.slice(0,3).map(r => `<b>${escapeHtml(r.ten)}</b> (${r.delta})`).join(', ');
+      parts.push(`📉 <span class="ai-label">TỤT DỐC</span> ${list} có dấu hiệu giảm sút. Cần gặp riêng tìm hiểu nguyên nhân.`);
+    }
+
+    if (a.coViPham.length > 0) {
+      if (a.topLogVP.length > 0 && a.topLogVP[0].count >= 2) {
+        const w = a.topLogVP[0];
+        const detail = a.weekLogs.filter(v => v.ma === w.ma).map(v => `"${v.loaiViPham}"`).join(', ');
+        parts.push(`🔔 <span class="ai-label">NHẮC NHỞ TRỌNG TÂM</span> Em <b>${escapeHtml(w.ten)}</b> vi phạm <b>${w.count} lần</b> (${detail}).`);
+      } else if (a.coViPham.length <= 5) {
+        const names = [...a.coViPham].sort((a,b) => a.tong-b.tong).map(r => `<b>${escapeHtml(r.ten)}</b>`).join(', ');
+        parts.push(`🔔 <span class="ai-label">NHẮC NHỞ</span> Các em ${names} cần rút kinh nghiệm cho tuần sau.`);
+      } else {
+        const first3 = [...a.coViPham].sort((a,b) => a.tong-b.tong).slice(0,3).map(r => `<b>${escapeHtml(r.ten)}</b>`).join(', ');
+        parts.push(`🔔 <span class="ai-label">NHẮC NHỞ</span> Có ${a.coViPham.length} trường hợp vi phạm, đáng chú ý nhất là ${first3}...`);
+      }
+    }
+
+    let fc;
+    if (a.xuHuong === 'tang') fc = `Đà tiến bộ tốt — nếu duy trì, Tuần ${week+1} có thể đạt TB trên <b>${Math.round((a.diemTB + 0.5) * 10) / 10}</b>.`;
+    else if (a.xuHuong === 'giam') fc = `Cần chấn chỉnh ngay. Mục tiêu Tuần ${week+1}: đưa điểm TB trở lại <b>${Math.round((a.diemTBPrev || 100) * 10) / 10}</b>.`;
+    else if (a.coViPham.length === 0) fc = `Nền nếp tốt — mục tiêu Tuần ${week+1} là <b>thêm lượt khen thưởng</b>.`;
+    else fc = `Cần giảm số vi phạm xuống dưới <b>${Math.max(1, a.coViPham.length - 1)} học sinh</b> trong Tuần ${week+1}.`;
+    parts.push(`🔮 <span class="ai-label">DỰ BÁO</span> ${fc}`);
+
+    let kl;
+    if (a.coViPham.length === 0 && a.coKhenThuong.length > 0) kl = `Tuần ${week} đạt kết quả <b>rất tốt</b>. Tiếp tục phát huy!`;
+    else if (a.coViPham.length === 0) kl = `Nền nếp tốt nhưng chưa sôi nổi.`;
+    else if (a.coViPham.length <= 3) kl = `Nhìn chung lớp vẫn giữ phong độ.`;
+    else kl = `Cần nghiêm túc chấn chỉnh.`;
+    parts.push(`🎯 <span class="ai-label">KẾT LUẬN</span> ${kl}`);
+
+    return parts.map(p => `<p>${p}</p>`).join('');
+  } catch (err) {
+    console.error('Lỗi AI tuần', week, err);
+    return `<p style="color:#c0392b">⚠️ Lỗi phân tích: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function analyzeMonthDeep() {
+  const weeksData = [];
+  for (let w = 1; w <= 4; w++) {
+    const scores = state.students.map(s => tinhTongDiem(getWeekData(w, s.ma)));
+    const vps = state.students.map(s => Number(getWeekData(w, s.ma).viPham || 0));
+    const kts = state.students.map(s => Number(getWeekData(w, s.ma).khenThuong || 0));
+    weeksData.push({ week: w,
+      diemTB: scores.reduce((a,b) => a+b, 0) / scores.length,
+      tongVP: vps.reduce((a,b) => a+b, 0),
+      tongKT: kts.reduce((a,b) => a+b, 0) });
+  }
+  const hsData = state.students.map(s => {
+    let tongTru = 0, tongCong = 0, tongVP = 0, tongKT = 0, tongDiem = 0;
+    const diemTungTuan = [];
+    for (let w = 1; w <= 4; w++) {
+      const d = getWeekData(w, s.ma);
+      const t = tinhTongDiem(d);
+      tongTru += Number(d.diemTru || 0);
+      tongCong += Number(d.diemCong || 0);
+      tongVP += Number(d.viPham || 0);
+      tongKT += Number(d.khenThuong || 0);
+      tongDiem += t;
+      diemTungTuan.push(t);
+    }
+    const tb = tongDiem / 4;
+    const ps = diemTungTuan.reduce((s,x) => s + Math.pow(x - tb, 2), 0) / 4;
+    const doBienDong = Math.sqrt(ps);
+    const delta = diemTungTuan[3] - diemTungTuan[0];
+    let xuHuongCaNhan;
+    if (delta >= 3) xuHuongCaNhan = 'tien-bo-manh';
+    else if (delta >= 1) xuHuongCaNhan = 'tien-bo';
+    else if (delta <= -3) xuHuongCaNhan = 'tut-doc-manh';
+    else if (delta <= -1) xuHuongCaNhan = 'tut-doc';
+    else xuHuongCaNhan = 'on-dinh';
+    return { ma: s.ma, ten: s.ten, lop: s.lop, tongTru, tongCong, tongVP, tongKT,
+      diemTB: Math.round(tb * 100) / 100, diemTungTuan, doBienDong: Math.round(doBienDong * 100) / 100,
+      delta, xuHuongCaNhan };
+  });
+  const monthLogs = state.violationLogs || [];
+  const loaiMap = {};
+  monthLogs.forEach(v => { loaiMap[v.loaiViPham] = (loaiMap[v.loaiViPham] || 0) + 1; });
+  const topLoaiThang = Object.entries(loaiMap).sort((a,b) => b[1] - a[1]);
+  const nhomMap = {};
+  monthLogs.forEach(v => { nhomMap[v.nhom] = (nhomMap[v.nhom] || 0) + 1; });
+  const diemTBLop = hsData.reduce((a,b) => a + b.diemTB, 0) / hsData.length;
+  const tongVPCaThang = hsData.reduce((a,b) => a + b.tongVP, 0);
+  const tongKTCaThang = hsData.reduce((a,b) => a + b.tongKT, 0);
+  const tongDiemTruThang = hsData.reduce((a,b) => a + Math.abs(b.tongTru), 0);
+  const topHS = [...hsData].sort((a,b) => b.diemTB - a.diemTB);
+  const nhieuVPHs = [...hsData].filter(h => h.tongVP > 0).sort((a,b) => b.tongVP - a.tongVP);
+  const tienBoManh = hsData.filter(h => h.xuHuongCaNhan === 'tien-bo-manh').sort((a,b) => b.delta - a.delta);
+  const tutDocManh = hsData.filter(h => h.xuHuongCaNhan === 'tut-doc-manh').sort((a,b) => a.delta - b.delta);
+  const xepLoaiCount = { 'Tốt':0, 'Khá':0, 'Trung bình':0, 'Yếu':0, 'Kém':0 };
+  hsData.forEach(h => xepLoaiCount[xepLoai(h.diemTB)]++);
+  const w1 = weeksData[0], w4 = weeksData[3];
+  const deltaDiem = w4.diemTB - w1.diemTB;
+  const deltaVP = w4.tongVP - w1.tongVP;
+  const deltaKT = w4.tongKT - w1.tongKT;
+  return { weeksData, hsData, monthLogs, topLoaiThang, nhomMap,
+    diemTBLop: Math.round(diemTBLop * 100) / 100, tongVPCaThang, tongKTCaThang, tongDiemTruThang,
+    topHS, nhieuVPHs, tienBoManh, tutDocManh, xepLoaiCount, deltaDiem, deltaVP, deltaKT };
+}
+
+function buildMonthConclusion() {
+  try {
+    if (!state.students || state.students.length === 0) return '<p>Chưa có dữ liệu để kết luận.</p>';
+    const m = analyzeMonthDeep();
+    const parts = [];
+
+    let xepLoaiLop;
+    if (m.diemTBLop >= 100) xepLoaiLop = 'XUẤT SẮC';
+    else if (m.diemTBLop >= 97) xepLoaiLop = 'RẤT TỐT';
+    else if (m.diemTBLop >= 93) xepLoaiLop = 'TỐT';
+    else if (m.diemTBLop >= 88) xepLoaiLop = 'KHÁ';
+    else if (m.diemTBLop >= 80) xepLoaiLop = 'TRUNG BÌNH';
+    else xepLoaiLop = 'CẦN CỐ GẮNG';
+
+    parts.push(`📋 <span class="ai-label">TÓM TẮT ĐIỀU HÀNH</span> Sau <b>4 tuần thi đua</b>, lớp 12A3 đạt điểm trung bình <b>${m.diemTBLop}/100</b> — <b>${xepLoaiLop}</b>. Trong tháng: <b>${m.tongVPCaThang} lượt vi phạm</b> (~${Math.round(m.tongVPCaThang / state.students.length * 100) / 100} lỗi/HS) với <b>${m.tongDiemTruThang} điểm trừ</b>, và <b>${m.tongKTCaThang} lượt khen thưởng</b>.`);
+
+    const diemTuan = m.weeksData.map(w => Math.round(w.diemTB * 10) / 10);
+    const minD = Math.min(...diemTuan), maxD = Math.max(...diemTuan);
+    const range = Math.max(1, maxD - minD);
+    let chart = `📈 <span class="ai-label">BIỂU ĐỒ XU HƯỚNG</span> Diễn biến điểm TB qua 4 tuần:<br>`;
+    chart += `<div style="font-family:monospace;font-size:13px;margin-top:8px;line-height:1.9;background:#fff;padding:10px 14px;border-radius:6px">`;
+    m.weeksData.forEach(w => {
+      const barLen = Math.round(((w.diemTB - minD + 1) / (range + 1)) * 30);
+      chart += `<b>Tuần ${w.week}</b> │<span style="color:#8e44ad">${'█'.repeat(barLen)}</span>│ <b>${Math.round(w.diemTB*10)/10}</b><br>`;
+    });
+    chart += `</div>`;
+    if (m.deltaDiem > 1) chart += `<br>➡️ Điểm TB <b>tăng ${Math.round(m.deltaDiem*10)/10} điểm</b> từ T1→T4 — tiến bộ rõ rệt.`;
+    else if (m.deltaDiem < -1) chart += `<br>➡️ Điểm TB <b>giảm ${Math.abs(Math.round(m.deltaDiem*10)/10)} điểm</b> — cần chấn chỉnh.`;
+    else chart += `<br>➡️ Điểm TB <b>ổn định</b> qua 4 tuần.`;
+    if (m.deltaVP < 0) chart += ` Số vi phạm giảm ${Math.abs(m.deltaVP)} lần.`;
+    else if (m.deltaVP > 0) chart += ` Số vi phạm tăng ${m.deltaVP} lần.`;
+    parts.push(chart);
+
+    if (m.topHS.length > 0 && m.topHS[0].diemTB >= 99) {
+      const md = ['🥇','🥈','🥉'];
+      const top3 = m.topHS.slice(0,3).map((h,i) => `${md[i]} <b>${escapeHtml(h.ten)}</b> — TB <b>${h.diemTB}</b> (${h.tongKT} KT, ${h.tongVP} VP)`).join('<br>');
+      parts.push(`🏆 <span class="ai-label">VINH DANH</span> Top 3 xuất sắc:<br><div style="padding-left:14px;margin-top:8px">${top3}</div>`);
+    }
+
+    if (m.tienBoManh.length > 0) {
+      const list = m.tienBoManh.slice(0,3).map(h => `<b>${escapeHtml(h.ten)}</b> (tăng ${Math.round(h.delta*10)/10} điểm T1→T4)`).join('<br>• ');
+      parts.push(`🚀 <span class="ai-label">TIẾN BỘ VƯỢT BẬC</span><br>• ${list}`);
+    }
+
+    if (m.tutDocManh.length > 0) {
+      const list = m.tutDocManh.slice(0,3).map(h => `<b>${escapeHtml(h.ten)}</b> (giảm ${Math.abs(Math.round(h.delta*10)/10)} điểm T1→T4)`).join('<br>• ');
+      parts.push(`⚠️ <span class="ai-label">CẦN QUAN TÂM</span><br>• ${list}`);
+    }
+
+    if (m.monthLogs.length > 0) {
+      const loaiStr = m.topLoaiThang.slice(0,3).map(([l,c]) => `<b>"${escapeHtml(l)}"</b> (${c})`).join(' > ');
+      let vpStr = `🔍 <span class="ai-label">PHÂN TÍCH VI PHẠM</span> Tổng <b>${m.monthLogs.length} bản ghi</b>. Top: ${loaiStr}. `;
+      const nhomHT = m.nhomMap['Học tập'] || 0;
+      const nhomNN = m.nhomMap['Nề nếp'] || 0;
+      if (nhomHT > nhomNN) vpStr += `Nghiêng về <b>Học tập</b> (${nhomHT} lần).`;
+      else if (nhomNN > nhomHT) vpStr += `Nghiêng về <b>Nề nếp</b> (${nhomNN} lần).`;
+      else vpStr += `Phân bố đều Học tập / Nề nếp.`;
+      parts.push(vpStr);
+    }
+
+    parts.push(`📋 <span class="ai-label">PHÂN LOẠI</span> <b>${m.xepLoaiCount['Tốt']}</b> Tốt • <b>${m.xepLoaiCount['Khá']}</b> Khá • <b>${m.xepLoaiCount['Trung bình']}</b> TB • <b>${m.xepLoaiCount['Yếu']}</b> Yếu • <b>${m.xepLoaiCount['Kém']}</b> Kém — trên ${m.hsData.length} HS.`);
+
+    if (m.nhieuVPHs.length > 0) {
+      const list = m.nhieuVPHs.slice(0,3).map(h => `<b>${escapeHtml(h.ten)}</b> (${h.tongVP} VP, ${Math.abs(h.tongTru)} điểm trừ)`).join('<br>• ');
+      parts.push(`🔔 <span class="ai-label">CẦN NHẮC NHỞ</span> ${m.nhieuVPHs.length} HS vi phạm:<br>• ${list}`);
+    } else {
+      parts.push(`✨ <span class="ai-label">ĐÁNG KHEN</span> Cả tháng <b>KHÔNG CÓ học sinh nào vi phạm</b>!`);
+    }
+
+    const tongKTTuan = m.weeksData.map(w => w.tongKT);
+    const maxKT = Math.max(...tongKTTuan);
+    const tuanDinhCao = m.weeksData.find(w => w.tongKT === maxKT);
+    if (maxKT >= 3 && tuanDinhCao) {
+      parts.push(`🌟 <span class="ai-label">ĐIỂM SÁNG TẬP THỂ</span> Tuần <b>${tuanDinhCao.week}</b> có phong trào phát biểu sôi nổi nhất với <b>${maxKT} lượt khen thưởng</b>.`);
+    }
+
+    let duBao;
+    if (m.deltaDiem > 0.5 && m.deltaVP <= 0) duBao = `Đà tiến bộ tích cực. Tháng sau có thể đạt <b>${Math.min(105, Math.round((m.diemTBLop + 1) * 10) / 10)}</b> điểm TB.`;
+    else if (m.deltaDiem < -0.5 || m.deltaVP > 2) duBao = `Cần chấn chỉnh ngay. Mục tiêu: đưa TB về <b>${Math.round((m.diemTBLop + 1) * 10) / 10}</b>, giảm VP xuống dưới <b>${Math.max(1, Math.round(m.tongVPCaThang / 4))} lỗi/tuần</b>.`;
+    else duBao = `Phong độ ổn định. Tháng sau cần <b>bứt phá khen thưởng</b> để nâng TB lên <b>${Math.round((m.diemTBLop + 0.5) * 10) / 10}+</b>.`;
+    parts.push(`🔮 <span class="ai-label">DỰ BÁO THÁNG SAU</span> ${duBao}`);
+
+    const kn = [];
+    if (m.deltaVP > 0 || m.tongVPCaThang > m.hsData.length) kn.push(`<b>Siết chặt nền nếp:</b> Ban cán sự họp đầu tuần, phân công theo dõi chéo.`);
+    if (m.tongKTCaThang < m.hsData.length * 0.5) kn.push(`<b>Kích cầu phát biểu:</b> Mỗi bạn đặt mục tiêu tối thiểu <b>1 lượt/tuần</b>.`);
+    if (m.tutDocManh.length > 0) kn.push(`<b>Hỗ trợ cá nhân:</b> GVCN gặp riêng ${m.tutDocManh.slice(0,2).map(h => escapeHtml(h.ten)).join(', ')}.`);
+    if (m.tienBoManh.length > 0) kn.push(`<b>Tuyên dương:</b> Biểu dương ${m.tienBoManh.slice(0,2).map(h => escapeHtml(h.ten)).join(', ')} trước tập thể.`);
+    kn.push(`<b>Duy trì:</b> Đánh giá thi đua cuối tuần, công khai kết quả tạo cạnh tranh lành mạnh.`);
+    parts.push(`💼 <span class="ai-label">KHUYẾN NGHỊ</span><br>${kn.map(x => `• ${x}`).join('<br>')}`);
+
+    let kl;
+    if (m.diemTBLop >= 100 && m.tongVPCaThang === 0) kl = `Một tháng <b>XUẤT SẮC</b>! Tập thể 12A3 đoàn kết, kỷ luật cao, học tập tích cực.`;
+    else if (m.diemTBLop >= 97) kl = `Tháng đạt <b>RẤT TỐT</b>. Chỉ cần rút kinh nghiệm là kết quả sẽ ấn tượng hơn.`;
+    else if (m.diemTBLop >= 92) kl = `Tháng đạt <b>TỐT</b>. Còn dư địa để tiến bộ.`;
+    else if (m.diemTBLop >= 85) kl = `Tháng đạt <b>KHÁ</b>. Cần kế hoạch hành động cụ thể cho tháng sau.`;
+    else kl = `Kết quả <b>CHƯA NHƯ MONG ĐỢI</b>. Cần chấn chỉnh mạnh mẽ.`;
+    parts.push(`🎯 <span class="ai-label">KẾT LUẬN CHUNG</span> ${kl}`);
+
+    return parts.map(p => `<p>${p}</p>`).join('');
+  } catch (err) {
+    console.error('Lỗi AI tháng:', err);
+    return `<p style="color:#c0392b">⚠️ Lỗi phân tích: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function updateAIComments() {
+  try {
+    for (let w = 1; w <= 4; w++) {
+      const el = document.getElementById('ai-week' + w);
+      if (el) el.innerHTML = buildWeekComment(w);
+    }
+    const sumEl = document.getElementById('ai-summary');
+    if (sumEl) sumEl.innerHTML = buildMonthConclusion();
+  } catch (err) {
+    console.error('Lỗi updateAIComments:', err);
+  }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderStudents() {
+  const tbody = document.getElementById('tbody-students');
+  document.getElementById('count-students').textContent = state.students.length;
+  if (state.students.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:30px;color:#95a5a6">Chưa có học sinh nào.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = state.students.map((s, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${escapeHtml(s.ma)}</strong></td>
+      <td style="text-align:left">${escapeHtml(s.ten)}</td>
+      <td>${escapeHtml(s.lop)}</td>
+      <td>
+        <button class="btn-info action-btn" onclick="openEditModal('${escapeAttr(s.ma)}')">Sửa</button>
+        <button class="btn-danger action-btn" onclick="deleteStudent('${escapeAttr(s.ma)}')">Xóa</button>
+      </td>
+    </tr>
+  `).join('');
+  const vMaSel = document.getElementById('v-ma');
+  if (vMaSel) {
+    const cur = vMaSel.value;
+    vMaSel.innerHTML = state.students.map(s => `<option value="${escapeHtml(s.ma)}">${escapeHtml(s.ma)} — ${escapeHtml(s.ten)}</option>`).join('');
+    if (cur) vMaSel.value = cur;
+  }
+}
+
+function renderWeek(week) {
+  const tbody = document.getElementById('tbody-week' + week);
+  if (state.students.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;color:#95a5a6">Chưa có học sinh nào.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = state.students.map((s, i) => {
+    const w = getWeekData(week, s.ma);
+    const tong = tinhTongDiem(w);
+    const loai = xepLoai(tong);
+    return `<tr>
+      <td>${i+1}</td>
+      <td><strong>${escapeHtml(s.ma)}</strong></td>
+      <td style="text-align:left">${escapeHtml(s.ten)}</td>
+      <td>${escapeHtml(s.lop)}</td>
+      <td><input type="number" value="${w.diemTru}" onchange="updateField(${week}, '${escapeAttr(s.ma)}', 'diemTru', this.value)"></td>
+      <td><input type="number" value="${w.diemCong}" onchange="updateField(${week}, '${escapeAttr(s.ma)}', 'diemCong', this.value)"></td>
+      <td><strong id="tong-${week}-${escapeAttr(s.ma)}">${tong}</strong></td>
+      <td><input type="number" value="${w.viPham}" onchange="updateField(${week}, '${escapeAttr(s.ma)}', 'viPham', this.value)"></td>
+      <td><input type="number" value="${w.khenThuong}" onchange="updateField(${week}, '${escapeAttr(s.ma)}', 'khenThuong', this.value)"></td>
+      <td class="${classXepLoai(loai)}">${loai}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSummaryWeekTables() {
+  for (let week = 1; week <= 4; week++) {
+    const tbody = document.getElementById('sum-tbody-week' + week);
+    if (!tbody) continue;
+    if (state.students.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="padding:20px;color:#95a5a6">Chưa có HS.</td></tr>`;
+      continue;
+    }
+    tbody.innerHTML = state.students.map((s, i) => {
+      const w = getWeekData(week, s.ma);
+      const tong = tinhTongDiem(w);
+      const loai = xepLoai(tong);
+      return `<tr>
+        <td>${i+1}</td>
+        <td><strong>${escapeHtml(s.ma)}</strong></td>
+        <td style="text-align:left">${escapeHtml(s.ten)}</td>
+        <td>${escapeHtml(s.lop)}</td>
+        <td>${w.diemTru}</td><td>${w.diemCong}</td>
+        <td><strong>${tong}</strong></td>
+        <td>${w.viPham}</td><td>${w.khenThuong}</td>
+        <td class="${classXepLoai(loai)}">${loai}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function updateField(week, ma, field, value) {
+  const w = getWeekData(week, ma);
+  w[field] = Number(value) || 0;
+  saveData();
+  const tongEl = document.getElementById(`tong-${week}-${ma}`);
+  if (tongEl) tongEl.textContent = tinhTongDiem(w);
+  const row = tongEl?.closest('tr');
+  if (row) {
+    const loaiEl = row.children[9];
+    const loai = xepLoai(tinhTongDiem(w));
+    loaiEl.textContent = loai;
+    loaiEl.className = classXepLoai(loai);
+  }
+  renderSummary();
+  renderSummaryWeekTables();
+  renderViolationTable();
+  renderViolationLog();
+  renderViolationLogSummary();
+  renderWeekViolationLogs();
+  updateAIComments();
+}
+
+function renderSummary() {
+  const tbody = document.getElementById('tbody-summary');
+  if (state.students.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;color:#95a5a6">Chưa có học sinh nào.</td></tr>`;
+    return;
+  }
+  let cG = 0, cM = 0, cB = 0;
+  tbody.innerHTML = state.students.map((s, i) => {
+    let tT = 0, tC = 0, tV = 0, tK = 0, tD = 0;
+    for (let w = 1; w <= 4; w++) {
+      const d = getWeekData(w, s.ma);
+      tT += Number(d.diemTru || 0); tC += Number(d.diemCong || 0);
+      tV += Number(d.viPham || 0); tK += Number(d.khenThuong || 0);
+      tD += tinhTongDiem(d);
+    }
+    const tb = Math.round((tD / 4) * 100) / 100;
+    const loai = xepLoai(tb);
+    if (loai === 'Tốt') cG++;
+    else if (loai === 'Khá' || loai === 'Trung bình') cM++;
+    else cB++;
+    return `<tr>
+      <td>${i+1}</td><td><strong>${escapeHtml(s.ma)}</strong></td>
+      <td style="text-align:left">${escapeHtml(s.ten)}</td><td>${escapeHtml(s.lop)}</td>
+      <td>${tT}</td><td>${tC}</td><td>${tV}</td><td>${tK}</td>
+      <td style="background:#e8f8f5;font-weight:700">${tb}</td>
+      <td class="${classXepLoai(loai)}">${loai}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('stat-total').textContent = state.students.length;
+  document.getElementById('stat-good').textContent = cG;
+  document.getElementById('stat-mid').textContent = cM;
+  document.getElementById('stat-bad').textContent = cB;
+}
+
+function renderViolationTable() {
+  const tbody = document.getElementById('tbody-violation');
+  const wrap = document.getElementById('violation-wrap');
+  const badge = document.getElementById('violation-count-badge');
+  if (!tbody) return;
+  const violators = state.students.map(s => {
+    const vp = []; let tVP = 0, tTru = 0;
+    for (let w = 1; w <= 4; w++) {
+      const d = getWeekData(w, s.ma);
+      const v = Number(d.viPham || 0);
+      vp.push(v); tVP += v; tTru += Number(d.diemTru || 0);
+    }
+    return { ma: s.ma, ten: s.ten, lop: s.lop, vp, tongVP: tVP, tongTru: tTru };
+  }).filter(x => x.tongVP > 0);
+  if (badge) badge.textContent = violators.length + ' học sinh';
+  if (violators.length === 0) {
+    wrap.innerHTML = `<div class="empty-state" style="color:#27ae60;font-style:normal;font-weight:600;font-size:15px;background:#eafaf1">✨ Tuyệt vời! Cả tháng không có học sinh nào vi phạm.</div>`;
+    return;
+  }
+  violators.sort((a,b) => b.tongVP - a.tongVP);
+  if (!wrap.querySelector('table')) {
+    wrap.innerHTML = `<table><thead><tr>
+      <th style="width:45px">STT</th><th style="width:70px">Mã HS</th>
+      <th style="text-align:left">Họ và tên</th><th style="width:60px">Lớp</th>
+      <th style="width:70px">Tuần 1</th><th style="width:70px">Tuần 2</th>
+      <th style="width:70px">Tuần 3</th><th style="width:70px">Tuần 4</th>
+      <th style="width:90px">Tổng vi phạm</th><th style="width:95px">Tổng điểm trừ</th>
+      <th style="width:100px">Mức độ</th>
+    </tr></thead><tbody id="tbody-violation"></tbody></table>`;
+    return renderViolationTable();
+  }
+  const tb2 = document.getElementById('tbody-violation');
+  tb2.innerHTML = violators.map((v, i) => {
+    let md, cls;
+    if (v.tongVP >= 4) { md = '🔴 Nghiêm trọng'; cls = 'weak'; }
+    else if (v.tongVP >= 2) { md = '🟠 Đáng lưu ý'; cls = 'average'; }
+    else { md = '🟡 Nhắc nhở'; cls = 'fair'; }
+    const cell = n => n > 0 ? `<span style="color:#c0392b;font-weight:700">${n}</span>` : `<span style="color:#bdc3c7">—</span>`;
+    return `<tr>
+      <td>${i+1}</td><td><strong>${escapeHtml(v.ma)}</strong></td>
+      <td style="text-align:left">${escapeHtml(v.ten)}</td><td>${escapeHtml(v.lop)}</td>
+      <td>${cell(v.vp[0])}</td><td>${cell(v.vp[1])}</td><td>${cell(v.vp[2])}</td><td>${cell(v.vp[3])}</td>
+      <td><strong style="color:#c0392b">${v.tongVP}</strong></td>
+      <td style="color:#c0392b">${v.tongTru}</td>
+      <td class="${cls}">${md}</td>
+    </tr>`;
+  }).join('');
+}
+
+function formatDateVN(d) {
+  if (!d) return '';
+  const [y, m, dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+function thuLabel(n) {
+  const m = {2:'Thứ 2', 3:'Thứ 3', 4:'Thứ 4', 5:'Thứ 5', 6:'Thứ 6', 7:'Thứ 7', 8:'CN'};
+  return m[n] || '';
+}
+function nhomClass(n) {
+  if (n === 'Học tập') return 'nhom-hoc-tap';
+  if (n === 'Nề nếp') return 'nhom-ne-nep';
+  return 'nhom-khac';
+}
+
+/* RENDER BẢNG VI PHẠM TRONG TỪNG TAB TUẦN */
+function renderWeekViolationLogs() {
+  for (let week = 1; week <= 4; week++) {
+    const tbody = document.getElementById('tbody-v-week' + week);
+    const badge = document.getElementById('badge-v-week' + week);
+    if (!tbody) continue;
+
+    const logs = (state.violationLogs || [])
+      .filter(v => Number(v.week) === week)
+      .sort((a, b) => (a.ngay || '').localeCompare(b.ngay || ''));
+
+    if (badge) badge.textContent = logs.length + ' vi phạm';
+
+    if (logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11" style="padding:25px;color:#27ae60;font-weight:600;background:#eafaf1">
+        ✨ Tuần ${week} không có vi phạm nào.
+      </td></tr>`;
+      continue;
+    }
+
+    tbody.innerHTML = logs.map((v, i) => {
+      const hs = getStudentByMa(v.ma);
+      const ten = hs ? hs.ten : '(HS đã xóa)';
+      const lop = hs ? hs.lop : '';
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${formatDateVN(v.ngay)}</td>
+        <td><strong>${escapeHtml(v.ma)}</strong></td>
+        <td>${escapeHtml(v.tiet)}</td>
+        <td>${thuLabel(v.thu)}</td>
+        <td style="text-align:left">${escapeHtml(ten)}</td>
+        <td>${escapeHtml(lop)}</td>
+        <td style="text-align:left;color:#c0392b">${escapeHtml(v.loaiViPham)}</td>
+        <td class="${nhomClass(v.nhom)}">${escapeHtml(v.nhom)}</td>
+        <td class="diem-tru">${v.diemTru}</td>
+        <td style="text-align:left;color:#7f8c8d;font-size:12px">${escapeHtml(v.ghiChu || '')}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function addViolation() {
+  const week = Number(document.getElementById('v-week').value);
+  const ngay = document.getElementById('v-ngay').value;
+  const ma = document.getElementById('v-ma').value;
+  const tiet = document.getElementById('v-tiet').value.trim();
+  const thu = Number(document.getElementById('v-thu').value);
+  const loai = document.getElementById('v-loai').value.trim();
+  const nhom = document.getElementById('v-nhom').value;
+  const diemTru = Number(document.getElementById('v-diem').value) || 0;
+  const ghiChu = document.getElementById('v-ghichu').value.trim();
+
+  if (!ngay) { toast('Vui lòng chọn ngày', 'warn'); return; }
+  if (!ma) { toast('Vui lòng chọn học sinh', 'warn'); return; }
+  if (!loai) { toast('Vui lòng nhập loại vi phạm', 'warn'); return; }
+  if (diemTru <= 0) { toast('Điểm trừ phải lớn hơn 0', 'warn'); return; }
+
+  const log = { id: 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    week, ngay, ma, tiet, thu, loaiViPham: loai, nhom, diemTru, ghiChu };
+  state.violationLogs.push(log);
+
+  if (document.getElementById('v-sync').checked) {
+    const w = getWeekData(week, ma);
+    w.viPham = Number(w.viPham || 0) + 1;
+    w.diemTru = Number(w.diemTru || 0) - diemTru;
+  }
+
+  saveData();
+  renderAll();
+  document.getElementById('v-tiet').value = '';
+  document.getElementById('v-loai').value = '';
+  document.getElementById('v-ghichu').value = '';
+  document.getElementById('v-diem').value = '1';
+  toast('Đã ghi nhận vi phạm của ' + getStudentByMa(ma).ten);
+}
+
+function deleteViolation(id) {
+  const log = state.violationLogs.find(v => v.id === id);
+  if (!log) return;
+  if (!confirm(`Xóa bản ghi vi phạm này?\nHS: ${getStudentByMa(log.ma)?.ten}\nNgày: ${formatDateVN(log.ngay)}\nLỗi: ${log.loaiViPham}`)) return;
+  const w = getWeekData(log.week, log.ma);
+  if (w.viPham > 0) w.viPham = Number(w.viPham) - 1;
+  w.diemTru = Number(w.diemTru || 0) + Number(log.diemTru || 0);
+  state.violationLogs = state.violationLogs.filter(v => v.id !== id);
+  saveData();
+  renderAll();
+  toast('Đã xóa bản ghi vi phạm', 'warn');
+}
+
+function renderViolationLog() {
+  const tbody = document.getElementById('tbody-violations');
+  if (!tbody) return;
+  const fW = document.getElementById('v-filter-week').value;
+  const fN = document.getElementById('v-filter-nhom').value;
+  let logs = [...state.violationLogs];
+  if (fW !== 'all') logs = logs.filter(v => Number(v.week) === Number(fW));
+  if (fN !== 'all') logs = logs.filter(v => v.nhom === fN);
+  logs.sort((a, b) => {
+    if (Number(a.week) !== Number(b.week)) return Number(a.week) - Number(b.week);
+    return (a.ngay || '').localeCompare(b.ngay || '');
+  });
+  const titleEl = document.getElementById('v-title');
+  if (titleEl) titleEl.textContent = fW === 'all' ? 'VI PHẠM NỘI QUY — TẤT CẢ CÁC TUẦN' : `VI PHẠM NỘI QUY TUẦN ${fW}`;
+  const totalDiemTru = logs.reduce((s, v) => s + Number(v.diemTru || 0), 0);
+  const infoEl = document.getElementById('v-total-info');
+  if (infoEl) infoEl.textContent = `${logs.length} vi phạm • Tổng điểm trừ: ${totalDiemTru}`;
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" style="padding:30px;color:#27ae60;font-weight:600;background:#eafaf1">✨ Không có vi phạm nào trong phạm vi đã chọn.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = logs.map((v, i) => {
+    const hs = getStudentByMa(v.ma);
+    const ten = hs ? hs.ten : '(HS đã xóa)';
+    const lop = hs ? hs.lop : '';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${formatDateVN(v.ngay)}</td>
+      <td><strong>${escapeHtml(v.ma)}</strong></td>
+      <td>${escapeHtml(v.tiet)}</td>
+      <td>${thuLabel(v.thu)}</td>
+      <td style="text-align:left">${escapeHtml(ten)}</td>
+      <td>${escapeHtml(lop)}</td>
+      <td style="text-align:left;color:#c0392b">${escapeHtml(v.loaiViPham)}</td>
+      <td class="${nhomClass(v.nhom)}">${escapeHtml(v.nhom)}</td>
+      <td class="diem-tru">${v.diemTru}</td>
+      <td style="text-align:left;color:#7f8c8d;font-size:12px">${escapeHtml(v.ghiChu || '')}</td>
+      <td class="no-print"><button class="btn-danger action-btn" onclick="deleteViolation('${v.id}')">Xóa</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderViolationLogSummary() {
+  const tbody = document.getElementById('tbody-violations-summary');
+  if (!tbody) return;
+  const logs = [...state.violationLogs].sort((a, b) => {
+    if (Number(a.week) !== Number(b.week)) return Number(a.week) - Number(b.week);
+    return (a.ngay || '').localeCompare(b.ngay || '');
+  });
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="padding:25px;color:#27ae60;font-weight:600;background:#eafaf1">✨ Cả tháng không có vi phạm nào.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = logs.map((v, i) => {
+    const hs = getStudentByMa(v.ma);
+    const ten = hs ? hs.ten : '(HS đã xóa)';
+    const lop = hs ? hs.lop : '';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${formatDateVN(v.ngay)}</td>
+      <td><strong>${escapeHtml(v.ma)}</strong></td>
+      <td>${escapeHtml(v.tiet)}</td>
+      <td>${thuLabel(v.thu)}</td>
+      <td style="text-align:left">${escapeHtml(ten)}</td>
+      <td>${escapeHtml(lop)}</td>
+      <td style="text-align:left;color:#c0392b">${escapeHtml(v.loaiViPham)}</td>
+      <td class="${nhomClass(v.nhom)}">${escapeHtml(v.nhom)}</td>
+      <td class="diem-tru">${v.diemTru}</td>
+    </tr>`;
+  }).join('');
+}
+
+function addStudent() {
+  const ma = document.getElementById('add-ma').value.trim();
+  const ten = document.getElementById('add-ten').value.trim();
+  const lop = document.getElementById('add-lop').value.trim() || '12A3';
+  if (!ma || !ten) { toast('Vui lòng nhập Mã HS và Họ tên', 'warn'); return; }
+  if (state.students.some(s => s.ma === ma)) { toast('Mã HS đã tồn tại!', 'error'); return; }
+  state.students.push({ma, ten, lop});
+  for (let w = 1; w <= 4; w++) state.weeks[w][ma] = {diemTru:0, diemCong:0, viPham:0, khenThuong:0};
+  saveData();
+  renderAll();
+  document.getElementById('add-ma').value = '';
+  document.getElementById('add-ten').value = '';
+  document.getElementById('add-ma').focus();
+  toast('Đã thêm: ' + ten);
+}
+
+function deleteStudent(ma) {
+  const s = state.students.find(x => x.ma === ma);
+  if (!s) return;
+  if (!confirm(`Xóa học sinh "${s.ten}" (${s.ma})?\nToàn bộ dữ liệu điểm và vi phạm sẽ bị xóa.`)) return;
+  state.students = state.students.filter(x => x.ma !== ma);
+  for (let w = 1; w <= 4; w++) delete state.weeks[w][ma];
+  state.violationLogs = state.violationLogs.filter(v => v.ma !== ma);
+  saveData();
+  renderAll();
+  toast('Đã xóa: ' + s.ten, 'warn');
+}
+
+function openEditModal(ma) {
+  const s = state.students.find(x => x.ma === ma);
+  if (!s) return;
+  editMaHS = ma;
+  document.getElementById('edit-ma').value = s.ma;
+  document.getElementById('edit-ten').value = s.ten;
+  document.getElementById('edit-lop').value = s.lop;
+  document.getElementById('editModal').classList.add('show');
+  document.getElementById('edit-ten').focus();
+}
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+  editMaHS = null;
+}
+function saveEditStudent() {
+  const nMa = document.getElementById('edit-ma').value.trim();
+  const nTen = document.getElementById('edit-ten').value.trim();
+  const nLop = document.getElementById('edit-lop').value.trim() || '12A3';
+  if (!nMa || !nTen) { toast('Vui lòng nhập Mã HS và Họ tên', 'warn'); return; }
+  const s = state.students.find(x => x.ma === editMaHS);
+  if (!s) return;
+  if (nMa !== editMaHS) {
+    if (state.students.some(x => x.ma === nMa)) { toast('Mã HS đã tồn tại!', 'error'); return; }
+    for (let w = 1; w <= 4; w++) { state.weeks[w][nMa] = state.weeks[w][editMaHS]; delete state.weeks[w][editMaHS]; }
+    state.violationLogs.forEach(v => { if (v.ma === editMaHS) v.ma = nMa; });
+  }
+  s.ma = nMa; s.ten = nTen; s.lop = nLop;
+  saveData();
+  renderAll();
+  closeEditModal();
+  toast('Đã cập nhật: ' + nTen);
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'thidua_12A3_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Đã xuất dữ liệu');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.students || !data.weeks) throw new Error('File không hợp lệ');
+      if (!confirm('Dữ liệu hiện tại sẽ bị thay thế. Tiếp tục?')) return;
+      state = data;
+      if (!Array.isArray(state.violationLogs)) state.violationLogs = [];
+      saveData();
+      renderAll();
+      toast('Đã nhập dữ liệu thành công');
+    } catch (err) {
+      toast('File không hợp lệ: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function resetAll() {
+  if (!confirm('XÓA TOÀN BỘ dữ liệu và quay về mặc định?')) return;
+  state = defaultData();
+  saveData();
+  renderAll();
+  toast('Đã reset về dữ liệu mặc định', 'warn');
+}
+
+function printSummary() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab[data-tab="summary"]').classList.add('active');
+  document.getElementById('tab-summary').classList.add('active');
+  setTimeout(() => window.print(), 300);
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const t = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + t).classList.add('active');
+  });
+});
+
+['week1','week2','week3','week4','summary'].forEach(key => {
+  const el = document.getElementById('note-' + key);
+  if (!el) return;
+  const k = key === 'summary' ? 'summary' : Number(key.replace('week',''));
+  el.addEventListener('input', () => { state.notes[k] = el.value; saveData(); });
+});
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return String(s ?? '').replace(/'/g, "\\'"); }
+
+let toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type !== 'success' ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = type; }, 2500);
+}
+
+function renderAll() {
+  renderStudents();
+  for (let w = 1; w <= 4; w++) renderWeek(w);
+  renderSummary();
+  renderSummaryWeekTables();
+  renderViolationTable();
+  renderViolationLog();
+  renderViolationLogSummary();
+  renderWeekViolationLogs();
+  updateAIComments();
+  document.getElementById('note-week1').value = state.notes[1] || '';
+  document.getElementById('note-week2').value = state.notes[2] || '';
+  document.getElementById('note-week3').value = state.notes[3] || '';
+  document.getElementById('note-week4').value = state.notes[4] || '';
+  document.getElementById('note-summary').value = state.notes.summary || '';
+}
+
+/* KHỞI ĐỘNG */
+loadData();
+document.getElementById('v-ngay').valueAsDate = new Date();
+renderAll();
+
+['add-ma','add-ten','add-lop'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') addStudent(); });
+});
+</script>
+
+</body>
+</html>

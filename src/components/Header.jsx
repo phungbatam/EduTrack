@@ -27,7 +27,7 @@ export default function Header({ title, subtitle, onMenu }) {
           <p className="hidden truncate text-xs text-slate-500 sm:block">{subtitle}</p>
         </div>
         {syncStatus === 'local-only' && (
-          <span className="hidden items-center gap-1.5 rounded-xl bg-amber-100 px-2.5 py-1.5 text-xs font-semibold text-amber-700 md:flex" title="Không thể đồng bộ lên máy chủ. Dữ liệu chỉ được lưu trên trình duyệt này.">
+          <span className="flex items-center gap-1.5 rounded-xl bg-amber-100 px-2.5 py-1.5 text-xs font-semibold text-amber-700" title="Chưa cấu hình kho dữ liệu dùng chung. Dữ liệu chỉ lưu trên trình duyệt này, không sang các thiết bị khác. Chạy: npm run server (xem README).">
             <CloudOff size={14} />
             Chưa đồng bộ
           </span>
