@@ -1,6 +1,7 @@
 import { AppProvider, useApp } from './context/AppContext.jsx'
 import Login from './pages/Login.jsx'
 import Layout from './components/Layout.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { GraduationCap } from 'lucide-react'
 
 function Shell() {
@@ -22,7 +23,9 @@ function Shell() {
 export default function App() {
   return (
     <AppProvider>
-      <Shell />
+      <ErrorBoundary>
+        <Shell />
+      </ErrorBoundary>
     </AppProvider>
   )
 }

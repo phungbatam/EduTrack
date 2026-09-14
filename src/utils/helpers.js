@@ -335,7 +335,7 @@ export function weeklyTrend(violations, n = 8) {
     const count = violations.filter(
       (v) => v && v.date && scoresIn(v) && matchesPeriod(v.date, { type: 'week', year: info.year, week: info.week }),
     ).length
-    out.push({ year: info.year, week: info.week, label: `T${info.week}`, count })
+    out.push({ year: info.year, week: info.week, label: `T${info.week}`, count, value: count })
   }
   return out
 }

@@ -22,6 +22,7 @@ import {
   CONDUCT_LEVELS,
   isBonus,
   ruleDelta,
+  matchesPeriod,
 } from '../utils/helpers.js'
 import { exportReportXlsx } from '../utils/excel.js'
 import { exportNodeToPdf } from '../utils/pdf.js'
