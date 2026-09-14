@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, Lock, ShieldCheck, Award, AlertTriangle, Medal, ChevronDown, Hourglass } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   buildStandings,
   availableWeeks,
@@ -14,6 +15,7 @@ import {
   statusOf,
   VIOLATION_STATUS,
   scoresIn,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 const wkKey = (w) => `${w.year}-W${w.week}`
@@ -26,7 +28,7 @@ function addDaysISO(iso, n) {
 
 function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap, myWeekViolations, groups, onToggle }) {
   const conduct = conductOf(myRow ? myRow.score : 100)
-  const penaltySum = myWeekViolations.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const weekDelta = myWeekViolations.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
   const pendingCount = myWeekViolations.filter((v) => statusOf(v) === 'pendingClass' || statusOf(v) === 'pendingAdmin').length
   const medal = { 1: 'text-amber-400', 2: 'text-slate-400', 3: 'text-orange-400' }
 
@@ -84,7 +86,8 @@ function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap,
               { label: 'Điểm thi đua tuần', value: myRow ? myRow.score : '—' },
               { label: 'Xếp hạng lớp', value: myRow ? `#${myRow.rank}` : '—', sub: `/ ${students.length}` },
               { label: 'Số lỗi trong tuần', value: myRow ? myRow.violations : 0 },
-              { label: 'Điểm trừ', value: penaltySum ? `-${penaltySum}đ` : '0đ' },
+              { label: 'Điểm trừ', value: weekDelta < 0 ? `${weekDelta}đ` : '0đ' },
+              { label: 'Điểm cộng', value: weekDelta > 0 ? `+${weekDelta}đ` : '0đ' },
               { label: 'Hạng tổ', value: myGroup ? `#${myGroup.rank}` : '—', sub: `/ ${groups.length}` },
             ].map((c) => (
               <div key={c.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -140,9 +143,7 @@ function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap,
                           {v.by && <span className="ml-2 text-[10px] font-normal text-slate-400">bởi {v.by}</span>}
                         </td>
                         <td className="py-2.5 pr-3">
-                          <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                            -{rule ? rule.points : 0}đ
-                          </span>
+                          <PointsBadge rule={rule} />
                         </td>
                         <td className="max-w-[260px] truncate py-2.5 pr-3 text-xs text-slate-400">{v.note || '—'}</td>
                         <td className="py-2.5 pr-3">
@@ -231,7 +232,7 @@ export default function StudentWeeks() {
 
   const myTotal = useMemo(() => {
     const inScope = violations.filter((v) => v.studentId === me.id && scoresIn(v))
-    return inScope.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+    return inScope.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
   }, [violations, me.id, ruleMap])
 
   const pendingAll = useMemo(
@@ -255,8 +256,8 @@ export default function StudentWeeks() {
           <div className="flex shrink-0 items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur">
             <Award size={22} className="text-amber-300" />
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-sky-200">Điểm trừ cả năm</p>
-              <p className="text-2xl font-extrabold leading-tight">{myTotal}đ</p>
+              <p className="text-[10px] uppercase tracking-wide text-sky-200">Chênh điểm cả năm</p>
+              <p className="text-2xl font-extrabold leading-tight">{myTotal >= 0 ? '+' : ''}{myTotal}đ</p>
             </div>
           </div>
         </div>

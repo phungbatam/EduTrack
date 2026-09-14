@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Check, Users, AlertTriangle, Trophy, ShieldCheck, CalendarDays, Lock, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import StatCard from '../components/StatCard.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   leaderScope,
   scopeLabel,
@@ -18,6 +19,8 @@ import {
   submitTargetFor,
   scoresIn,
   isClassLeaderRole,
+  isBonus,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 function LeaderViolationForm({ members, onSave, onError }) {
@@ -62,22 +65,35 @@ function LeaderViolationForm({ members, onSave, onError }) {
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-slate-600">Lỗi vi phạm *</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-600">Lỗi vi phạm / Khen thưởng *</label>
           <select
             value={form.ruleId}
             onChange={(e) => setForm({ ...form, ruleId: e.target.value })}
             className={field}
           >
-            <option value="">-- Chọn lỗi vi phạm --</option>
-            {rules.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} (-{r.points} điểm)
-              </option>
-            ))}
+            <option value="">-- Chọn lỗi / khen thưởng --</option>
+            <optgroup label="Trừ điểm (vi phạm)">
+              {rules.filter((r) => !isBonus(r)).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} (-{r.points} điểm)
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Cộng điểm (khen thưởng)">
+              {rules.filter((r) => isBonus(r)).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} (+{r.points} điểm)
+                </option>
+              ))}
+            </optgroup>
           </select>
           {rule && (
             <p className="mt-1 text-[11px] text-slate-400">
-              Điểm trừ: <span className="font-bold text-rose-500">-{rule.points} điểm</span>
+              {isBonus(rule) ? (
+                <span className="font-bold text-emerald-600">Điểm cộng: +{rule.points} điểm</span>
+              ) : (
+                <span className="font-bold text-rose-500">Điểm trừ: -{rule.points} điểm</span>
+              )}
             </p>
           )}
         </div>
@@ -174,10 +190,22 @@ export default function LeaderView() {
   )
 
   const handleSubmitAll = () => {
-    const target = submitTargetFor(roleLabel)
     if (!myDrafts.length) return notify('Không có nháp nào để gửi.', 'error')
-    myDrafts.forEach((v) => updateViolation(v.id, { status: target, submittedAt: new Date().toISOString() }))
-    notify(`Đã gửi ${myDrafts.length} vi phạm lên ${target === 'pendingAdmin' ? 'giáo viên' : 'lớp trưởng/phó'} duyệt.`)
+    const baseTarget = submitTargetFor(roleLabel)
+    let toTeacher = 0
+    myDrafts.forEach((v) => {
+      const targetStu = students.find((s) => s.id === v.studentId)
+      const isClassLeaderTarget = targetStu && isClassLeaderRole(targetStu.role)
+      const target = baseTarget === 'pendingAdmin' || isClassLeaderTarget ? 'pendingAdmin' : 'pendingClass'
+      if (target === 'pendingAdmin') toTeacher += 1
+      updateViolation(v.id, { status: target, submittedAt: new Date().toISOString() })
+    })
+    const direct = toTeacher > 0
+    notify(
+      `Đã gửi ${myDrafts.length} vi phạm lên duyệt${
+        direct ? (toTeacher === myDrafts.length ? ' (gửi thẳng giáo viên).' : ` - ${toTeacher} bản gửi thẳng giáo viên do là lớp trưởng/phó.`) : '.'
+      }`,
+    )
   }
 
   const handleDeleteDraft = (id) => {
@@ -185,7 +213,7 @@ export default function LeaderView() {
     notify('Đã xóa nháp.')
   }
 
-  const top = rows[rows.length - 1]
+  const top = rows[0]
   const weekLocked = isWeekLocked({ year: current.year, week: current.week })
   const recent = useMemo(
     () => [...scopeViolations].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 25),
@@ -205,7 +233,7 @@ export default function LeaderView() {
   }
 
   const avgScore = members.length ? (rows.reduce((s, r) => s + r.score, 0) / members.length).toFixed(1) : '0'
-  const totalDeducted = periodScoring.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const periodDelta = periodScoring.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
 
   const handleRecord = (formData) => {
     addViolation({
@@ -253,7 +281,7 @@ export default function LeaderView() {
           color="amber"
           hint="Điểm thi đua TB của các thành viên"
         />
-        <StatCard label="Điểm trừ kỳ này" value={`-${totalDeducted}`} icon={Lock} color="rose" />
+        <StatCard label="Điểm thay đổi kỳ này" value={`${periodDelta >= 0 ? '+' : ''}${periodDelta}`} icon={Lock} color={periodDelta >= 0 ? 'emerald' : 'rose'} />
       </div>
 
       <div className="flex items-start gap-2.5 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 text-xs leading-relaxed text-indigo-800">
@@ -306,7 +334,8 @@ export default function LeaderView() {
                 <li key={v.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 text-sm">
                   <span className="font-semibold text-slate-700">{stu ? stu.name : '—'}</span>
                   <span className="text-slate-500">
-                    {rule ? rule.name : '—'} ( -{rule ? rule.points : 0}đ)
+                    {rule ? rule.name : '—'}{' '}
+                    <PointsBadge rule={rule} />
                   </span>
                   <span className="text-xs text-slate-400">{v.date ? formatDate(v.date) : ''}</span>
                   <span className="ml-auto flex items-center gap-1">
@@ -449,9 +478,7 @@ export default function LeaderView() {
                     <td className="px-4 py-2.5 font-semibold text-slate-700">{stu ? stu.name : '—'}</td>
                     <td className="px-4 py-2.5 text-slate-600">{rule ? rule.name : '—'}</td>
                     <td className="px-4 py-2.5">
-                      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                        -{rule ? rule.points : 0}đ
-                      </span>
+                      <PointsBadge rule={rule} />
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-400">{v.by || 'Nhập tay'}</td>
                     <td className="px-4 py-2.5">

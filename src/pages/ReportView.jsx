@@ -3,6 +3,7 @@ import { FileSpreadsheet, FileDown, Loader2, Trophy, Medal, School, CalendarRang
 import { useApp } from '../context/AppContext.jsx'
 import BarChart from '../components/BarChart.jsx'
 import MonthlySummary from '../components/MonthlySummary.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   buildStandings,
   ruleStats,
@@ -17,6 +18,8 @@ import {
   weekLabel,
   conductOf,
   CONDUCT_LEVELS,
+  isBonus,
+  ruleDelta,
 } from '../utils/helpers.js'
 import { exportReportXlsx } from '../utils/excel.js'
 import { exportNodeToPdf } from '../utils/pdf.js'
@@ -86,7 +89,7 @@ export default function ReportView() {
   )
 
   const totalMeanwhile = filteredPeriod.length
-  const totalDeducted = filteredPeriod.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const totalDelta = filteredPeriod.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
   const activeGroups = groups.filter((g) => g.members > 0)
   const classAvg = activeGroups.length
     ? +(activeGroups.reduce((s, g) => s + g.avg, 0) / activeGroups.length).toFixed(1)
@@ -213,8 +216,10 @@ export default function ReportView() {
             <p className="mt-1 text-xl font-extrabold text-rose-600">{totalMeanwhile}</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <p className="text-xs text-slate-500">Tổng điểm bị trừ</p>
-            <p className="mt-1 text-xl font-extrabold text-amber-600">-{totalDeducted}đ</p>
+            <p className="text-xs text-slate-500">Thay đổi điểm (trừ/cộng)</p>
+            <p className={`mt-1 text-xl font-extrabold ${totalDelta >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {totalDelta >= 0 ? '+' : ''}{totalDelta}đ
+            </p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-xs text-slate-500">Điểm TB lớp</p>
@@ -296,7 +301,9 @@ export default function ReportView() {
                   <th className="px-4 py-3 font-semibold">Tổ</th>
                   <th className="px-4 py-3 font-semibold">Chức vụ</th>
                   <th className="px-4 py-3 font-semibold">Số lỗi</th>
+                  <th className="px-4 py-3 font-semibold">Khen</th>
                   <th className="px-4 py-3 font-semibold">Điểm trừ</th>
+                  <th className="px-4 py-3 font-semibold">Điểm cộng</th>
                   <th className="px-4 py-3 font-semibold">Điểm thi đua</th>
                 </tr>
               </thead>
@@ -312,7 +319,9 @@ export default function ReportView() {
                     <td className="px-4 py-2.5 text-slate-500">{GROUP_NAMES[r.student.group]}</td>
                     <td className="px-4 py-2.5 text-xs text-slate-500">{r.student.role}</td>
                     <td className="px-4 py-2.5 text-slate-500">{r.violations}</td>
+                    <td className="px-4 py-2.5 text-emerald-600">{r.bonuses}</td>
                     <td className="px-4 py-2.5 text-rose-500">-{r.deducted}</td>
+                    <td className="px-4 py-2.5 text-emerald-600">+{r.bonus}</td>
                     <td className="px-4 py-2.5">
                       <span className={`rounded-lg px-2 py-0.5 text-xs font-bold ${r.score >= 90 ? 'bg-emerald-50 text-emerald-600' : r.score >= 75 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
                         {r.score}
@@ -351,7 +360,7 @@ export default function ReportView() {
                 </tr>
               </thead>
               <tbody>
-                {[...rows].reverse().map((r) => {
+                {rows.map((r) => {
                   const c = conductOf(r.score)
                   return (
                     <tr key={`c-${r.student.id}`} className="border-b border-slate-50 last:border-0">
@@ -390,8 +399,8 @@ export default function ReportView() {
                     <tr key={s.rule.id} className="border-b border-slate-50 last:border-0">
                       <td className="px-4 py-2.5 font-medium text-slate-700">{s.rule.name}</td>
                       <td className="px-4 py-2.5 text-slate-500">{s.count}</td>
-                      <td className="px-4 py-2.5 text-rose-500">-{s.rule.points}đ</td>
-                      <td className="px-4 py-2.5 font-semibold text-rose-600">-{s.count * s.rule.points}đ</td>
+                      <td className={`px-4 py-2.5 ${isBonus(s.rule) ? 'text-emerald-500' : 'text-rose-500'}`}>{isBonus(s.rule) ? '+' : '-'}{s.rule.points}đ</td>
+                      <td className={`px-4 py-2.5 font-semibold ${isBonus(s.rule) ? 'text-emerald-600' : 'text-rose-600'}`}>{s.count * ruleDelta(s.rule) >= 0 ? '+' : ''}{s.count * ruleDelta(s.rule)}đ</td>
                     </tr>
                   ))
                 ) : (
@@ -405,7 +414,7 @@ export default function ReportView() {
                   <td className="px-4 py-2.5 font-bold text-slate-700">Tổng cộng</td>
                   <td className="px-4 py-2.5 font-bold text-slate-700">{filteredPeriod.length}</td>
                   <td className="px-4 py-2.5" />
-                  <td className="px-4 py-2.5 font-bold text-rose-600">-{totalDeducted}đ</td>
+                  <td className={`px-4 py-2.5 font-bold ${totalDelta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{totalDelta >= 0 ? '+' : ''}{totalDelta}đ</td>
                 </tr>
               </tbody>
             </table>
@@ -443,7 +452,7 @@ export default function ReportView() {
                           <span className="text-xs text-slate-400"> · Tổ {stu ? stu.group : '?'}</span>
                         </td>
                         <td className="px-4 py-2 text-slate-600">{rule ? rule.name : '—'}</td>
-                        <td className="px-4 py-2 text-rose-500">-{rule ? rule.points : 0}đ</td>
+                        <td className="px-4 py-2"><PointsBadge rule={rule} /></td>
                         <td className="max-w-[200px] truncate px-4 py-2 text-xs text-slate-400">{v.note || '—'}</td>
                       </tr>
                     )

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pencil, Trash2, CalendarDays, Search, Check, Lock, LockOpen, ShieldCheck } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import Modal from '../components/Modal.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   todayISO,
   formatDate,
@@ -11,6 +12,8 @@ import {
   matchesPeriod,
   statusOf,
   VIOLATION_STATUS,
+  isBonus,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 function ViolationForm({ initial, onSave, onCancel, onError }) {
@@ -64,22 +67,35 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
           )}
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-slate-600">Lỗi vi phạm *</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-600">Lỗi vi phạm / Khen thưởng *</label>
           <select
             value={form.ruleId}
             onChange={(e) => setForm({ ...form, ruleId: e.target.value })}
             className={field}
           >
-            <option value="">-- Chọn lỗi vi phạm --</option>
-            {rules.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} (-{r.points} điểm)
-              </option>
-            ))}
+            <option value="">-- Chọn lỗi / khen thưởng --</option>
+            <optgroup label="Trừ điểm (vi phạm)">
+              {rules.filter((r) => !isBonus(r)).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} (-{r.points} điểm)
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Cộng điểm (khen thưởng)">
+              {rules.filter((r) => isBonus(r)).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} (+{r.points} điểm)
+                </option>
+              ))}
+            </optgroup>
           </select>
           {rule && (
             <p className="mt-1 text-[11px] text-slate-400">
-              Điểm trừ: <span className="font-bold text-rose-500">-{rule.points} điểm</span>
+              {isBonus(rule) ? (
+                <span className="font-bold text-emerald-600">Điểm cộng: +{rule.points} điểm</span>
+              ) : (
+                <span className="font-bold text-rose-500">Điểm trừ: -{rule.points} điểm</span>
+              )}
             </p>
           )}
         </div>
@@ -189,7 +205,7 @@ export default function ViolationManagement() {
       .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
   }, [violations, students, ruleMap, search, ruleFilter, statusFilter, period])
 
-  const totalInPeriod = filtered.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const totalDelta = filtered.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
 
   const weekCount = violations.filter((v) => matchesPeriod(v.date, { type: 'week', ...current })).length
 
@@ -241,8 +257,8 @@ export default function ViolationManagement() {
           <p className="mt-1 text-2xl font-extrabold text-slate-800">{filtered.length} lỗi</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-slate-500">Tổng điểm trừ (kỳ lọc)</p>
-          <p className="mt-1 text-2xl font-extrabold text-rose-600">-{totalInPeriod}đ</p>
+          <p className="text-xs text-slate-500">Điểm thay đổi (kỳ lọc)</p>
+          <p className={`mt-1 text-2xl font-extrabold ${totalDelta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{totalDelta >= 0 ? '+' : ''}{totalDelta}đ</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs text-slate-500">Danh mục lỗi hiện có</p>
@@ -285,7 +301,7 @@ export default function ViolationManagement() {
               <option value="all">Tất cả lỗi</option>
               {rules.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name} (-{r.points}đ)
+                  {r.name} ({isBonus(r) ? `+${r.points}` : `-${r.points}`}đ)
                 </option>
               ))}
             </select>
@@ -382,9 +398,7 @@ export default function ViolationManagement() {
                     </td>
                     <td className="px-4 py-3 text-slate-600">{rule ? rule.name : '—'}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                        -{rule ? rule.points : 0}đ
-                      </span>
+                      <PointsBadge rule={rule} />
                     </td>
                     <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-400">{v.note || '—'}</td>
                     <td className="px-4 py-3">

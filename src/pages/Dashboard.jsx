@@ -12,6 +12,7 @@ import {
 import { useApp } from '../context/AppContext.jsx'
 import StatCard from '../components/StatCard.jsx'
 import BarChart from '../components/BarChart.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   buildStandings,
   ruleStats,
@@ -24,6 +25,8 @@ import {
   matchesPeriod,
   getWeekInfo,
   weekLabel,
+  isBonus,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 const lastWeekInfo = () => getWeekInfo(new Date(Date.now() - 7 * 86400000))
@@ -53,13 +56,13 @@ export default function Dashboard() {
 
   const ruleMap = useMemo(() => Object.fromEntries(rules.map((r) => [r.id, r])), [rules])
 
-  const totalDeducted = filtered.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const totalDelta = filtered.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
   const classAvg = groups.length
     ? +(groups.reduce((s, g) => s + (g.members ? g.avg : 0), 0) / Math.max(groups.filter((g) => g.members).length, 1)).toFixed(1)
     : 0
-  const worst = [...rows].filter((r) => r.violations > 0).slice(0, 5)
-  const best = [...rows].slice(-5).reverse()
-  const topRules = rulesOfPeriod.slice(0, 5)
+  const worst = [...rows].filter((r) => r.violations > 0).sort((a, b) => b.violations - a.violations).slice(0, 5)
+  const best = rows.slice(0, 5)
+  const topRules = rulesOfPeriod.filter((s) => !isBonus(s.rule)).slice(0, 5)
 
   const periodSwitch = (label, p) => (
     <button
@@ -99,7 +102,7 @@ export default function Dashboard() {
           color="rose"
           hint={periodLabel(period)}
         />
-        <StatCard label="Tổng điểm bị trừ" value={`-${totalDeducted}`} icon={TrendingDown} color="amber" hint="Trong kỳ" />
+        <StatCard label="Điểm thay đổi trong kỳ" value={`${totalDelta >= 0 ? '+' : ''}${totalDelta}đ`} icon={TrendingDown} color={totalDelta >= 0 ? 'emerald' : 'amber'} hint="Trong kỳ" />
         <StatCard label="Điểm TB lớp" value={classAvg} icon={Trophy} color="emerald" hint="Trên thang 100" />
       </div>
 
@@ -160,7 +163,7 @@ export default function Dashboard() {
               worst.map((r, i) => (
                 <li key={r.student.id} className="flex items-center gap-3">
                   <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${i < 3 ? 'bg-rose-500' : 'bg-slate-300'}`}>
-                    {r.rank}
+                    {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-700">{r.student.name}</p>
@@ -193,7 +196,7 @@ export default function Dashboard() {
                   <div className="mb-1 flex items-center justify-between text-sm">
                     <span className="font-medium text-slate-700">{s.rule.name}</span>
                     <span className="text-xs font-semibold text-slate-500">
-                      {s.count} lần · -{s.count * s.rule.points}đ
+                      {s.count} lần · {s.count * ruleDelta(s.rule) >= 0 ? '+' : ''}{s.count * ruleDelta(s.rule)}đ
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100">
@@ -249,9 +252,7 @@ export default function Dashboard() {
                     </td>
                     <td className="py-2.5 pr-3 text-slate-600">{rule ? rule.name : '—'}</td>
                     <td className="py-2.5 pr-3">
-                      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                        -{rule ? rule.points : 0}đ
-                      </span>
+                      <PointsBadge rule={rule} />
                     </td>
                   </tr>
                 )

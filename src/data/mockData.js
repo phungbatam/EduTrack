@@ -84,6 +84,10 @@ export function createSeedRules() {
     { id: 'r10', name: 'Vô lễ với giáo viên',                 points: 5 },
     { id: 'r11', name: 'Gây gổ, đánh nhau',                   points: 6 },
     { id: 'r12', name: 'Ăn quà vặt trong lớp',                points: 1 },
+    { id: 'r13', name: 'Biểu dương trong sinh hoạt lớp',      points: 5, kind: 'bonus' },
+    { id: 'r14', name: 'Hỗ trợ, giúp đỡ bạn trong học tập',   points: 3, kind: 'bonus' },
+    { id: 'r15', name: 'Đạt giải trong hoạt động của trường', points: 10, kind: 'bonus' },
+    { id: 'r16', name: 'Đóng góp ý tưởng cho tập thể lớp',    points: 2, kind: 'bonus' },
   ]
 }
 

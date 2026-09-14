@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { FileText, AlertTriangle } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
+import PointsBadge from './PointsBadge.jsx'
 import {
   buildStandings,
   weeksInMonth,
@@ -14,6 +15,7 @@ import {
   conductOf,
   VIOLATION_STATUS,
   GROUP_NAMES,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 const th = 'px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500 whitespace-nowrap'
@@ -58,9 +60,9 @@ export default function MonthlySummary({ year, month, studentId }) {
           const i = isoWeekInfo(v.date)
           if (!i || `${i.year}-W${i.week}` !== key) return
           if (!acc[v.studentId]) acc[v.studentId] = { total: 0, week: {} }
-          const pts = ruleMap[v.ruleId]?.points || 0
-          acc[v.studentId].total += pts
-          acc[v.studentId].week[key] = (acc[v.studentId].week[key] || 0) + pts
+          const delta = ruleDelta(ruleMap[v.ruleId])
+          acc[v.studentId].total += delta
+          acc[v.studentId].week[key] = (acc[v.studentId].week[key] || 0) + delta
         })
     })
     return acc
@@ -74,7 +76,7 @@ export default function MonthlySummary({ year, month, studentId }) {
   }, [inMonth, studentId])
 
   const displayRows = studentId ? monthRows.filter((r) => r.student.id === studentId) : monthRows
-  const display = displayRows.slice().reverse()
+  const display = displayRows
 
   const pendingNote = pendingCount > 0 && (
     <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
@@ -117,7 +119,9 @@ export default function MonthlySummary({ year, month, studentId }) {
                 <th className={th}>Họ tên</th>
                 <th className={th}>Tổ</th>
                 <th className={`${th} text-center`}>Vi phạm</th>
+                <th className={`${th} text-center`}>Khen</th>
                 <th className={`${th} text-right`}>Điểm trừ</th>
+                <th className={`${th} text-right`}>Điểm cộng</th>
                 <th className={`${th} text-right`}>Điểm TB tuần</th>
                 <th className={`${th} text-center`}>Xếp loại</th>
               </tr>
@@ -125,7 +129,7 @@ export default function MonthlySummary({ year, month, studentId }) {
             <tbody>
               {display.length === 0 && (
                 <tr>
-                  <td colSpan={8} className={`${td} text-center text-slate-400`}>Không có học sinh.</td>
+                  <td colSpan={10} className={`${td} text-center text-slate-400`}>Không có học sinh.</td>
                 </tr>
               )}
               {display.map((r, i) => {
@@ -140,7 +144,9 @@ export default function MonthlySummary({ year, month, studentId }) {
                     </td>
                     <td className={td}>{GROUP_NAMES[r.student.group]}</td>
                     <td className={`${td} text-center text-slate-500`}>{r.violations}</td>
+                    <td className={`${td} text-center text-emerald-600`}>{r.bonuses}</td>
                     <td className={`${td} text-right font-bold text-rose-600`}>-{r.deducted}đ</td>
+                    <td className={`${td} text-right font-bold text-emerald-600`}>+{r.bonus}đ</td>
                     <td className={`${td} text-right font-bold text-slate-800`}>{r.score}</td>
                     <td className={`${td} text-center`}>
                       <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-bold ${c.cls}`}>{c.label}</span>
@@ -157,7 +163,7 @@ export default function MonthlySummary({ year, month, studentId }) {
         <h3 className="mb-3 font-bold text-slate-800">II. Chi tiết theo từng tuần</h3>
         <div className="space-y-4">
           {weekRows.map(({ w, dates, rows }) => {
-            const list = studentId ? rows.filter((r) => r.student.id === studentId) : rows.slice().reverse()
+            const list = studentId ? rows.filter((r) => r.student.id === studentId) : rows
             return (
               <div key={`${w.year}-W${w.week}`} className="overflow-hidden rounded-xl border border-slate-200">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-4 py-2.5">
@@ -173,6 +179,7 @@ export default function MonthlySummary({ year, month, studentId }) {
                         <th className={th}>Họ tên</th>
                         <th className={th}>Tổ</th>
                         <th className={`${th} text-right`}>Điểm trừ</th>
+                        <th className={`${th} text-right`}>Điểm cộng</th>
                         <th className={`${th} text-right`}>Điểm</th>
                         <th className={`${th} text-center`}>Xếp loại</th>
                       </tr>
@@ -180,7 +187,7 @@ export default function MonthlySummary({ year, month, studentId }) {
                     <tbody>
                       {list.length === 0 && (
                         <tr>
-                          <td colSpan={7} className={`${td} text-center text-slate-400`}>Không có dữ liệu.</td>
+                          <td colSpan={8} className={`${td} text-center text-slate-400`}>Không có dữ liệu.</td>
                         </tr>
                       )}
                       {list.map((r, i) => {
@@ -192,6 +199,7 @@ export default function MonthlySummary({ year, month, studentId }) {
                             <td className={`${td} font-semibold text-slate-700`}>{r.student.name}</td>
                             <td className={td}>{GROUP_NAMES[r.student.group]}</td>
                             <td className={`${td} text-right text-rose-600`}>-{r.deducted}đ</td>
+                            <td className={`${td} text-right text-emerald-600`}>+{r.bonus}đ</td>
                             <td className={`${td} text-right font-bold text-slate-800`}>{r.score}</td>
                             <td className={`${td} text-center`}>
                               <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-bold ${c.cls}`}>{c.label}</span>
@@ -209,7 +217,7 @@ export default function MonthlySummary({ year, month, studentId }) {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
-        <h3 className="mb-3 font-bold text-slate-800">III. Ma trận điểm trừ theo tuần</h3>
+        <h3 className="mb-3 font-bold text-slate-800">III. Ma trận điểm (trừ/cộng) theo tuần</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left">
             <thead>
@@ -231,12 +239,14 @@ export default function MonthlySummary({ year, month, studentId }) {
                       const k = `${x.year}-W${x.week}`
                       const v = m.week[k] || 0
                       return (
-                        <td key={k} className={`${td} text-center ${v ? 'font-bold text-rose-600' : 'text-slate-300'}`}>
-                          {v ? `-${v}` : '—'}
+                        <td key={k} className={`${td} text-center ${v > 0 ? 'font-bold text-emerald-600' : v < 0 ? 'font-bold text-rose-600' : 'text-slate-300'}`}>
+                          {v > 0 ? `+${v}` : v < 0 ? `${v}đ` : '—'}
                         </td>
                       )
                     })}
-                    <td className={`${td} text-center font-bold text-rose-600`}>{m.total ? `-${m.total}` : '—'}</td>
+                    <td className={`${td} text-center font-bold ${m.total > 0 ? 'text-emerald-600' : m.total < 0 ? 'text-rose-600' : 'text-slate-300'}`}>
+                      {m.total > 0 ? `+${m.total}` : m.total < 0 ? `${m.total}đ` : '—'}
+                    </td>
                   </tr>
                 )
               })}
@@ -249,7 +259,7 @@ export default function MonthlySummary({ year, month, studentId }) {
           </table>
         </div>
         <p className="mt-2 text-xs text-slate-400">
-          Dấu <b>—</b> nghĩa là không có vi phạm trong tuần đó; ô có điểm trừ hiển thị mức <b>-điểm</b>.
+          Ô hiển thị <b>+điểm</b> là khen thưởng (cộng điểm), <b>-điểm</b> là vi phạm (trừ điểm); dấu <b>—</b> nghĩa là không có ghi nhận trong tuần đó.
         </p>
       </div>
 
@@ -284,7 +294,9 @@ export default function MonthlySummary({ year, month, studentId }) {
                     <td className={`${td} font-semibold text-slate-700`}>{stuMap[v.studentId]?.name || '—'}</td>
                     <td className={`${td} font-mono text-xs text-slate-400`}>{stuMap[v.studentId]?.code || ''}</td>
                     <td className={`${td} text-slate-600`}>{ruleMap[v.ruleId]?.name || '—'}</td>
-                    <td className={`${td} text-right text-rose-600`}>-{ruleMap[v.ruleId]?.points || 0}đ</td>
+                    <td className={`${td} text-right`}>
+                      <PointsBadge rule={ruleMap[v.ruleId]} />
+                    </td>
                     <td className={`${td} text-xs text-slate-400`}>{v.by || 'Nhập tay'}</td>
                     <td className={`${td} max-w-[240px] truncate text-xs text-slate-400`}>{v.note || '—'}</td>
                     <td className={td}>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Medal, Trophy, Bell, AlertTriangle, TrendingUp, Award, ShieldCheck } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import StatCard from '../components/StatCard.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   buildStandings,
   currentPeriod,
@@ -10,6 +11,7 @@ import {
   timeAgo,
   GROUP_NAMES,
   GROUP_COLORS,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 export default function StudentView() {
@@ -37,8 +39,8 @@ export default function StudentView() {
 
   const allTimeMy = useMemo(() => {
     const all = violations.filter((v) => v.studentId === me.id)
-    const deducted = all.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
-    return { count: all.length, deducted }
+    const delta = all.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
+    return { count: all.length, delta }
   }, [violations, me.id, ruleMap])
 
   const notifications = useMemo(
@@ -137,11 +139,11 @@ export default function StudentView() {
           hint={myGroup ? `${GROUP_NAMES[me.group]} đứng hạng ${myGroup.rank}/${groups.length}` : ''}
         />
         <StatCard
-          label="Tổng lỗi từ đầu năm"
+          label="Tổng ghi nhận từ đầu năm"
           value={allTimeMy.count}
           icon={ShieldCheck}
           color="amber"
-          hint={`Đã trừ tổng cộng ${allTimeMy.deducted} điểm`}
+          hint={`Thay đổi điểm: ${allTimeMy.delta >= 0 ? '+' : ''}${allTimeMy.delta}`}
         />
       </div>
 
@@ -209,7 +211,7 @@ export default function StudentView() {
                       {isMine && <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-600">Của bạn</span>}
                     </p>
                     <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
-                      <AlertTriangle size={11} /> {timeAgo(v.date)} · -{rule ? rule.points : 0}đ
+                      <AlertTriangle size={11} /> {timeAgo(v.date)} · <PointsBadge rule={rule} />
                     </p>
                   </div>
                 </li>
@@ -250,9 +252,7 @@ export default function StudentView() {
                     <td className="py-2.5 pr-3 text-slate-500">{formatDate(v.date)}</td>
                     <td className="py-2.5 pr-3 font-medium text-slate-700">{rule ? rule.name : '—'}</td>
                     <td className="py-2.5 pr-3">
-                      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                        -{rule ? rule.points : 0}đ
-                      </span>
+                      <PointsBadge rule={rule} />
                     </td>
                     <td className="max-w-[260px] truncate py-2.5 pr-3 text-xs text-slate-400">{v.note || '—'}</td>
                   </tr>

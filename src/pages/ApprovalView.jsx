@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ShieldCheck, Check, X, Search, AlertTriangle, Lock, CalendarDays, RotateCcw, FileText } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
+import PointsBadge from '../components/PointsBadge.jsx'
 import {
   formatDate,
   weekLabel,
@@ -8,6 +9,7 @@ import {
   statusOf,
   VIOLATION_STATUS,
   isClassLeaderRole,
+  ruleDelta,
 } from '../utils/helpers.js'
 
 const TABS_BY_ROLE = {
@@ -126,7 +128,7 @@ export default function ApprovalView() {
       .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
   }, [scoringV, grp, weekFilter, search, stuMap, ruleMap])
 
-  const totalPoints = filtered.reduce((s, v) => s + (ruleMap[v.ruleId]?.points || 0), 0)
+  const totalDelta = filtered.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
 
   const handleApprove = (id) => {
     const v = violations.find((x) => x.id === id)
@@ -234,7 +236,7 @@ export default function ApprovalView() {
         <div className="border-b border-slate-100 p-4">
           <p className="text-sm text-slate-500">
             {tab === 'queue'
-              ? `Tổng: ${filtered.length} bản ghi chờ duyệt · Tổng điểm trừ: -${totalPoints}đ`
+              ? `Tổng: ${filtered.length} bản ghi chờ duyệt · Thay đổi điểm: ${totalDelta >= 0 ? '+' : ''}${totalDelta}đ`
               : tab === 'drafts'
                 ? `Tổng: ${filtered.length} nháp tổ trưởng chưa gửi`
                 : tab === 'approved'
@@ -288,9 +290,7 @@ export default function ApprovalView() {
                     </td>
                     <td className="px-4 py-2.5 text-slate-600">{rule ? rule.name : '—'}</td>
                     <td className="px-4 py-2.5">
-                      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                        -{rule ? rule.points : 0}đ
-                      </span>
+                      <PointsBadge rule={rule} />
                     </td>
                     <td className="max-w-[220px] px-4 py-2.5 text-xs text-slate-400">
                       {tab === 'rejected' && v.rejectedReason ? (

@@ -70,6 +70,20 @@ export function conductOf(score) {
   return CONDUCT_LEVELS.find((l) => n >= l.min) || CONDUCT_LEVELS[CONDUCT_LEVELS.length - 1]
 }
 
+export function isBonus(rule) {
+  return !!(rule && rule.kind === 'bonus')
+}
+
+export function ruleDelta(rule) {
+  const p = rule && Number(rule.points) ? Number(rule.points) : 0
+  return isBonus(rule) ? p : -p
+}
+
+export function ruleLabel(rule) {
+  const p = rule && Number(rule.points) ? Number(rule.points) : 0
+  return `${isBonus(rule) ? '+' : '-'}${p}đ`
+}
+
 export function monthKey(y, m) {
   return `${y}-${String(m).padStart(2, '0')}`
 }
@@ -215,21 +229,28 @@ export function buildStandings(students, rules, violations, period) {
   const cells = {}
   const weekMap = {}
   students.forEach((s) => {
-    cells[s.id] = { violations: 0, deducted: 0 }
+    cells[s.id] = { violations: 0, bonuses: 0, deducted: 0, bonus: 0 }
     weekMap[s.id] = new Map()
   })
   violations.forEach((v) => {
     if (!v || !cells[v.studentId]) return
     if (!scoresIn(v)) return
     if (!matchesPeriod(v.date, period)) return
-    cells[v.studentId].violations += 1
-    const pts = ruleMap[v.ruleId]?.points || 0
-    cells[v.studentId].deducted += pts
+    const rule = ruleMap[v.ruleId]
+    const pts = rule && Number(rule.points) ? Number(rule.points) : 0
+    const delta = ruleDelta(rule)
+    if (isBonus(rule)) {
+      cells[v.studentId].bonuses += 1
+      cells[v.studentId].bonus += pts
+    } else {
+      cells[v.studentId].violations += 1
+      cells[v.studentId].deducted += pts
+    }
     if (period.type === 'month' && v.date) {
       const info = isoWeekInfo(v.date)
       if (info) {
         const wk = `${info.year}-W${info.week}`
-        weekMap[v.studentId].set(wk, (weekMap[v.studentId].get(wk) || 0) + pts)
+        weekMap[v.studentId].set(wk, (weekMap[v.studentId].get(wk) || 0) + delta)
       }
     }
   })
@@ -241,18 +262,17 @@ export function buildStandings(students, rules, violations, period) {
       if (period.type === 'month') {
         let sum = 0
         monthWeeks.forEach((w) => {
-          sum += Math.max(0, BASE_SCORE - (weekMap[s.id].get(`${w.year}-W${w.week}`) || 0))
+          sum += Math.max(0, BASE_SCORE + (weekMap[s.id].get(`${w.year}-W${w.week}`) || 0))
         })
         score = monthWeeks.length ? Math.round((sum / monthWeeks.length) * 10) / 10 : BASE_SCORE
       } else {
-        score = Math.max(0, BASE_SCORE - c.deducted)
+        score = Math.max(0, BASE_SCORE - c.deducted + c.bonus)
       }
-      return { student: s, violations: c.violations, deducted: c.deducted, score }
+      return { student: s, violations: c.violations, bonuses: c.bonuses, deducted: c.deducted, bonus: c.bonus, score }
     })
-    .sort((a, b) => a.score - b.score)
-  const n = rows.length
+    .sort((a, b) => b.score - a.score || a.violations - b.violations)
   rows.forEach((r, i) => {
-    r.rank = n - i
+    r.rank = i + 1
   })
   const groups = [1, 2, 3, 4]
     .map((g) => {
