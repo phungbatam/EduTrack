@@ -3,9 +3,8 @@ import { ShieldCheck, Check, X, Search, AlertTriangle, Lock, CalendarDays, Rotat
 import { useApp } from '../context/AppContext.jsx'
 import PointsBadge from '../components/PointsBadge.jsx'
 import {
-  formatDate,
-  weekLabel,
   isoWeekInfo,
+  violationDateLabel,
   statusOf,
   VIOLATION_STATUS,
   isClassLeaderRole,
@@ -276,13 +275,11 @@ export default function ApprovalView() {
               {filtered.map((v) => {
                 const s = stuMap[v.studentId]
                 const rule = ruleMap[v.ruleId]
-                const w = v.date ? isoWeekInfo(v.date) : null
                 const st = statusOf(v)
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
                     <td className="px-4 py-2.5">
-                      <p className="text-slate-700">{formatDate(v.date)}</p>
-                      {w && <p className="text-[11px] text-slate-400">{weekLabel(w)}</p>}
+                      <p className="text-slate-700">{violationDateLabel(v.date)}</p>
                     </td>
                     <td className="px-4 py-2.5">
                       <p className="font-semibold text-slate-700">{s ? s.name : '—'}</p>

@@ -127,6 +127,24 @@ export function formatDate(iso) {
   return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
 
+const WEEKDAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+
+export function weekdayName(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return ''
+  return WEEKDAY_NAMES[new Date(y, m - 1, d).getDay()]
+}
+
+export function violationDateLabel(iso) {
+  if (!iso) return '—'
+  const wd = weekdayName(iso)
+  const dd = formatDate(iso)
+  const i = isoWeekInfo(iso)
+  if (!i) return `${wd}, ${dd}`
+  return `${wd}, ${dd} · Tuần ${i.week}`
+}
+
 export function timeAgo(iso) {
   if (!iso) return ''
   const today = new Date()

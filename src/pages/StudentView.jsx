@@ -9,6 +9,7 @@ import {
   periodLabel,
   formatDate,
   timeAgo,
+  violationDateLabel,
   GROUP_NAMES,
   GROUP_COLORS,
   ruleDelta,
@@ -249,7 +250,7 @@ export default function StudentView() {
                 const rule = ruleMap[v.ruleId]
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0">
-                    <td className="py-2.5 pr-3 text-slate-500">{formatDate(v.date)}</td>
+                    <td className="py-2.5 pr-3 text-slate-500">{violationDateLabel(v.date)}</td>
                     <td className="py-2.5 pr-3 font-medium text-slate-700">{rule ? rule.name : '—'}</td>
                     <td className="py-2.5 pr-3">
                       <PointsBadge rule={rule} />

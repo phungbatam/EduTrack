@@ -7,9 +7,10 @@ import {
   leaderScope,
   scopeLabel,
   todayISO,
-  formatDate,
   isoWeekInfo,
   weekLabel,
+  weekdayName,
+  violationDateLabel,
   currentPeriod,
   buildStandings,
   conductOf,
@@ -107,7 +108,7 @@ function LeaderViolationForm({ members, onSave, onError }) {
           />
           {week && (
             <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
-              <CalendarDays size={12} /> {weekLabel(week)}
+              <CalendarDays size={12} /> {weekdayName(form.date)} · {weekLabel(week)}
             </p>
           )}
           {week && locked && (
@@ -337,7 +338,7 @@ export default function LeaderView() {
                     {rule ? rule.name : '—'}{' '}
                     <PointsBadge rule={rule} />
                   </span>
-                  <span className="text-xs text-slate-400">{v.date ? formatDate(v.date) : ''}</span>
+                  <span className="text-xs text-slate-400">{v.date ? violationDateLabel(v.date) : ''}</span>
                   <span className="ml-auto flex items-center gap-1">
                     <button
                       onClick={() => handleDeleteDraft(v.id)}
@@ -474,7 +475,7 @@ export default function LeaderView() {
                 const st = VIOLATION_STATUS[statusOf(v)]
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
-                    <td className="px-4 py-2.5 text-slate-500">{formatDate(v.date)}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-slate-500">{violationDateLabel(v.date)}</td>
                     <td className="px-4 py-2.5 font-semibold text-slate-700">{stu ? stu.name : '—'}</td>
                     <td className="px-4 py-2.5 text-slate-600">{rule ? rule.name : '—'}</td>
                     <td className="px-4 py-2.5">

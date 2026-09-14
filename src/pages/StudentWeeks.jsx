@@ -16,6 +16,7 @@ import {
   VIOLATION_STATUS,
   scoresIn,
   ruleDelta,
+  violationDateLabel,
 } from '../utils/helpers.js'
 
 const wkKey = (w) => `${w.year}-W${w.week}`
@@ -137,7 +138,7 @@ function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap,
                     const s = VIOLATION_STATUS[statusOf(v)]
                     return (
                       <tr key={v.id} className="border-b border-slate-50 last:border-0">
-                        <td className="py-2.5 pr-3 text-slate-500">{formatDate(v.date)}</td>
+                        <td className="py-2.5 pr-3 text-slate-500">{violationDateLabel(v.date)}</td>
                         <td className="py-2.5 pr-3 font-medium text-slate-700">
                           {rule ? rule.name : '—'}
                           {v.by && <span className="ml-2 text-[10px] font-normal text-slate-400">bởi {v.by}</span>}

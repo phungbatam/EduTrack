@@ -14,8 +14,16 @@ export default async function handler(req, res) {
 
   if (kind === 'admin') {
     let admin = await kvGet(KEYS.admin)
+    const LEGACY = { account: 'admin', passHash: sha256('123456') }
+    const NEW = { account: 'AdminTNT1009', passHash: sha256('TNT0917@aF') }
     if (!admin || typeof admin !== 'object') {
-      admin = { account: 'admin', passHash: sha256('123456') }
+      admin = { ...NEW }
+      await kvSet(KEYS.admin, admin)
+    } else if (
+      admin.account === LEGACY.account &&
+      admin.passHash === LEGACY.passHash
+    ) {
+      admin = { ...NEW }
       await kvSet(KEYS.admin, admin)
     }
     if (String(account || '').trim() === admin.account && sha256(password) === admin.passHash) {

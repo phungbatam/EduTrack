@@ -11,12 +11,13 @@ import {
   formatDate,
   matchesPeriod,
   scoresIn,
-  statusOf,
-  conductOf,
-  VIOLATION_STATUS,
-  GROUP_NAMES,
-  ruleDelta,
-} from '../utils/helpers.js'
+statusOf,
+    conductOf,
+    VIOLATION_STATUS,
+    GROUP_NAMES,
+    ruleDelta,
+    violationDateLabel,
+  } from '../utils/helpers.js'
 
 const th = 'px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500 whitespace-nowrap'
 const td = 'px-3 py-2 text-sm whitespace-nowrap'
@@ -290,7 +291,7 @@ export default function MonthlySummary({ year, month, studentId }) {
                 const s = VIOLATION_STATUS[st]
                 return (
                   <tr key={v.id} className="border-b border-slate-100 last:border-0">
-                    <td className={`${td} text-slate-500`}>{formatDate(v.date)}</td>
+                    <td className={`${td} text-slate-500`}>{violationDateLabel(v.date)}</td>
                     <td className={`${td} font-semibold text-slate-700`}>{stuMap[v.studentId]?.name || '—'}</td>
                     <td className={`${td} font-mono text-xs text-slate-400`}>{stuMap[v.studentId]?.code || ''}</td>
                     <td className={`${td} text-slate-600`}>{ruleMap[v.ruleId]?.name || '—'}</td>

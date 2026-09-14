@@ -16,6 +16,7 @@ import {
   periodLabel,
   formatDate,
   weekLabel,
+  violationDateLabel,
   conductOf,
   CONDUCT_LEVELS,
   isBonus,
@@ -446,7 +447,7 @@ export default function ReportView() {
                     const stu = students.find((s) => s.id === v.studentId)
                     return (
                       <tr key={v.id} className="border-b border-slate-50 last:border-0">
-                        <td className="px-4 py-2 text-slate-500">{formatDate(v.date)}</td>
+                        <td className="px-4 py-2 text-slate-500">{violationDateLabel(v.date)}</td>
                         <td className="px-4 py-2">
                           {stu ? `${stu.name}` : '—'}
                           <span className="text-xs text-slate-400"> · Tổ {stu ? stu.group : '?'}</span>

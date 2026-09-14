@@ -5,8 +5,9 @@ import Modal from '../components/Modal.jsx'
 import PointsBadge from '../components/PointsBadge.jsx'
 import {
   todayISO,
-  formatDate,
   weekLabel,
+  weekdayName,
+  violationDateLabel,
   isoWeekInfo,
   availableWeeks,
   matchesPeriod,
@@ -109,7 +110,7 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
           />
           {week && (
             <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
-              <CalendarDays size={12} /> {weekLabel(week)}
+              <CalendarDays size={12} /> {weekdayName(form.date)} · {weekLabel(week)}
             </p>
           )}
           {week && locked && (
@@ -383,14 +384,13 @@ export default function ViolationManagement() {
                   >
                     <td className="px-4 py-3">
                       <p className="flex items-center gap-1.5 font-medium text-slate-700">
-                        {formatDate(v.date)}
+                        {violationDateLabel(v.date)}
                         {lockedRow && (
                           <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
                             <Lock size={10} /> Đã chốt
                           </span>
                         )}
                       </p>
-                      {w && <p className="text-[11px] text-slate-400">{weekLabel(w)}</p>}
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-slate-700">{stu ? stu.name : '—'}</p>

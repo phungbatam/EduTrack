@@ -139,9 +139,9 @@ export async function adminLogin({ account, password }) {
     return await parseOrThrow(res)
   } catch (e) {
     if (isApiUnavailable(e)) {
-      if (String(account || '').trim() === 'admin' && password === '123456') {
+      if (String(account || '').trim() === 'AdminTNT1009' && password === 'TNT0917@aF') {
         const token = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
-        return { role: 'admin', account: 'admin', name: 'Giáo viên chủ nhiệm', token }
+        return { role: 'admin', account: 'AdminTNT1009', name: 'Giáo viên chủ nhiệm', token }
       }
       throw new Error('Sai tài khoản hoặc mật khẩu quản trị.')
     }

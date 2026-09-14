@@ -25,6 +25,7 @@ import {
   matchesPeriod,
   getWeekInfo,
   weekLabel,
+  violationDateLabel,
   isBonus,
   ruleDelta,
 } from '../utils/helpers.js'
@@ -245,7 +246,7 @@ export default function Dashboard() {
                 const stu = students.find((s) => s.id === v.studentId)
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0">
-                    <td className="py-2.5 pr-3 text-slate-500">{formatDate(v.date)}</td>
+                    <td className="py-2.5 pr-3 text-slate-500">{violationDateLabel(v.date)}</td>
                     <td className="py-2.5 pr-3 font-medium text-slate-700">
                       {stu ? stu.name : '—'}
                       <span className="ml-1 text-xs text-slate-400">(Tổ {stu ? stu.group : '?'})</span>
