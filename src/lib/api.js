@@ -91,15 +91,16 @@ const SEED_COUNTS = { students: 45, rules: 12, violations: 0, lockedWeeks: 0 }
 
 export async function loadCollection(col) {
   const local = localRead(LOCAL_KEYS[col])
-  const localTs = getLocalTs(col)
   try {
     const res = await fetchWithRetry(`/api/store?col=${col}`, {})
     const body = await parseOrThrow(res)
     if (!Array.isArray(body.data)) throw new Error('Dữ liệu không hợp lệ')
     const apiData = body.data
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
-    const localIsFresh = localTs > 0 && (Date.now() - localTs) < SEVEN_DAYS
-    if (Array.isArray(local) && local.length > 0 && localIsFresh && apiData.length <= (SEED_COUNTS[col] || 0)) {
+    if (
+      Array.isArray(local) &&
+      local.length > 0 &&
+      apiData.length <= (SEED_COUNTS[col] || 0)
+    ) {
       return local
     }
     localWrite(LOCAL_KEYS[col], apiData)
