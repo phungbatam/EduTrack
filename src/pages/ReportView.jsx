@@ -17,6 +17,7 @@ import {
   formatDate,
   weekLabel,
   violationDateLabel,
+  scoresIn,
   conductOf,
   CONDUCT_LEVELS,
   isBonus,
@@ -77,16 +78,9 @@ export default function ReportView() {
   const filteredPeriod = useMemo(
     () =>
       violations
-        .filter((v) => {
-          if (period.type === 'all') return true
-          if (!v.date) return false
-          if (period.type === 'month') return v.date.startsWith(monthSel)
-          const [y, m, d] = v.date.split('-').map(Number)
-          const w = getWeekOf(new Date(y, m - 1, d))
-          return w.year === period.year && w.week === period.week
-        })
+        .filter((v) => scoresIn(v) && matchesPeriod(v.date, period))
         .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
-    [violations, period, monthSel],
+    [violations, period],
   )
 
   const totalMeanwhile = filteredPeriod.length
@@ -485,15 +479,6 @@ export default function ReportView() {
       </div>
     </div>
   )
-}
-
-function getWeekOf(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const dayNum = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
-  return { year: d.getUTCFullYear(), week: weekNo }
 }
 
 function SectionTitle({ children }) {
