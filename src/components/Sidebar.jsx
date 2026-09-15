@@ -11,6 +11,8 @@ import {
   BarChart3,
   Megaphone,
   ShieldCheck,
+  MessageSquareWarning,
+  History,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import { isLeaderRole } from '../utils/helpers.js'
@@ -20,8 +22,10 @@ const ADMIN_NAV = [
   { key: 'students', label: 'Học sinh & Phân tổ', icon: Users },
   { key: 'violations', label: 'Quản lý vi phạm', icon: AlertTriangle },
   { key: 'approve', label: 'Duyệt phiếu', icon: ShieldCheck },
+  { key: 'appeals', label: 'Xử lý khiếu nại', icon: MessageSquareWarning },
   { key: 'rules', label: 'Danh mục lỗi vi phạm', icon: ClipboardList },
   { key: 'reports', label: 'Báo cáo & Xuất dữ liệu', icon: FileText },
+  { key: 'activity', label: 'Lịch sử hoạt động', icon: History },
 ]
 
 const LEAD_NAV = [{ key: 'lead', label: 'Điều hành của lớp', icon: Megaphone }]

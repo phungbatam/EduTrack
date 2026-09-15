@@ -47,3 +47,69 @@ input[type='month'] {
     background: #fff !important;
   }
 }
+
+.dark {
+  color-scheme: dark;
+}
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+.dark .bg-white {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+.dark .bg-white\/80 {
+  background-color: rgba(30, 41, 59, 0.92) !important;
+}
+.dark .bg-slate-50,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/60,
+.dark .bg-slate-50\/70,
+.dark .bg-slate-50\/80,
+.dark .bg-slate-100 {
+  background-color: #16223a !important;
+}
+.dark .bg-slate-200 {
+  background-color: #293548 !important;
+}
+.dark .bg-slate-300 {
+  background-color: #374151 !important;
+}
+.dark .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+.dark .text-slate-500 {
+  color: #a5b2c6 !important;
+}
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+.dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-50 {
+  border-color: #334155 !important;
+}
+.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+.dark .bg-indigo-50,
+.dark .bg-indigo-50\/40,
+.dark .bg-indigo-50\/50,
+.dark .bg-indigo-50\/70 {
+  background-color: #1e2942 !important;
+}
+.dark .shadow-sm,
+.dark .shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}

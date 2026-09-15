@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Medal, Trophy, Bell, AlertTriangle, TrendingUp, Award, ShieldCheck } from 'lucide-react'
+import { Medal, Trophy, Bell, AlertTriangle, TrendingUp, Award, ShieldCheck, MessageSquareWarning, X, Send } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import StatCard from '../components/StatCard.jsx'
 import PointsBadge from '../components/PointsBadge.jsx'
@@ -13,12 +13,72 @@ import {
   GROUP_NAMES,
   GROUP_COLORS,
   ruleDelta,
+  weekdayName,
 } from '../utils/helpers.js'
 
+const APPEAL_BADGE = (status) =>
+  status === 'pending'
+    ? { label: 'Đang chờ xử lý', cls: 'bg-amber-50 text-amber-600 border-amber-200' }
+    : status === 'removed'
+      ? { label: 'Đã chấp nhận (xóa vi phạm)', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' }
+      : { label: 'Đã bác', cls: 'bg-rose-50 text-rose-600 border-rose-200' }
+
+function AppealModal({ open, onClose, violation, ruleName, onSubmit }) {
+  const [reason, setReason] = useState('')
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="flex items-center gap-2 text-base font-bold text-slate-800">
+              <MessageSquareWarning size={18} className="text-amber-500" />
+              Viết đơn khiếu nại
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {weekdayName(violation.date)} {formatDate(violation.date)} · {ruleName}
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
+            <X size={18} />
+          </button>
+        </div>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={4}
+          className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
+          placeholder="Trình bày lý do: nội dung chưa đúng, thiếu căn cứ, ghi nhầm ngày/giờ..."
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={() => {
+              onSubmit(reason.trim())
+              setReason('')
+            }}
+            disabled={!reason.trim()}
+            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-amber-600 disabled:opacity-50"
+          >
+            <Send size={15} /> Gửi khiếu nại
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function StudentView() {
-  const { session, students, rules, violations } = useApp()
+  const { session, students, rules, violations, appeals, addAppeal, notify } = useApp()
   const me = students.find((s) => s.id === session.id) || session
   const [period, setPeriod] = useState(currentPeriod())
+  const [appealTarget, setAppealTarget] = useState(null)
 
   const ruleMap = useMemo(() => Object.fromEntries(rules.map((r) => [r.id, r])), [rules])
 
@@ -37,6 +97,23 @@ export default function StudentView() {
         .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
     [violations, me.id],
   )
+
+  const myAppeals = useMemo(() => appeals.filter((a) => a.studentId === me.id), [appeals, me.id])
+
+  const appealOf = (v) => myAppeals.find((a) => a.violationId === v.id)
+
+  const submitAppeal = (reason) => {
+    if (!appealTarget) return
+    addAppeal({
+      violationId: appealTarget.id,
+      ruleName: ruleMap[appealTarget.ruleId] ? ruleMap[appealTarget.ruleId].name : '—',
+      studentId: me.id,
+      studentName: me.name,
+      reason,
+    })
+    notify('Đã gửi đơn khiếu nại lên quản trị viên.')
+    setAppealTarget(null)
+  }
 
   const allTimeMy = useMemo(() => {
     const all = violations.filter((v) => v.studentId === me.id)
@@ -229,25 +306,28 @@ export default function StudentView() {
           <h3 className="font-bold text-slate-800">Lịch sử vi phạm của tôi ({periodLabel(period)})</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
                 <th className="py-2.5 pr-3 font-semibold">Ngày</th>
                 <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm</th>
                 <th className="py-2.5 pr-3 font-semibold">Điểm bị trừ</th>
                 <th className="py-2.5 pr-3 font-semibold">Ghi chú</th>
+                <th className="py-2.5 pr-3 text-right font-semibold">Khiếu nại</th>
               </tr>
             </thead>
             <tbody>
               {myViolations.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400">
+                  <td colSpan={5} className="py-8 text-center text-slate-400">
                     Bạn chưa có vi phạm nào trong kỳ này. Cố gắng nhé!
                   </td>
                 </tr>
               )}
               {myViolations.map((v) => {
                 const rule = ruleMap[v.ruleId]
+                const ap = appealOf(v)
+                const badge = ap ? APPEAL_BADGE(ap.status) : null
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0">
                     <td className="py-2.5 pr-3 text-slate-500">{violationDateLabel(v.date)}</td>
@@ -256,6 +336,20 @@ export default function StudentView() {
                       <PointsBadge rule={rule} />
                     </td>
                     <td className="max-w-[260px] truncate py-2.5 pr-3 text-xs text-slate-400">{v.note || '—'}</td>
+                    <td className="py-2.5 pr-3 text-right">
+                      {badge ? (
+                        <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setAppealTarget(v)}
+                          className="flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 transition hover:bg-amber-100"
+                        >
+                          <MessageSquareWarning size={12} /> Khiếu nại
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -263,6 +357,58 @@ export default function StudentView() {
           </table>
         </div>
       </div>
+
+      {myAppeals.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <MessageSquareWarning size={18} className="text-amber-500" />
+            <h3 className="font-bold text-slate-800">Các đơn khiếu nại của tôi</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
+                  <th className="py-2.5 pr-3 font-semibold">Vi phạm</th>
+                  <th className="py-2.5 pr-3 font-semibold">Lý do</th>
+                  <th className="py-2.5 pr-3 font-semibold">Ngày gửi</th>
+                  <th className="py-2.5 pr-3 font-semibold">Trạng thái</th>
+                  <th className="py-2.5 pr-3 font-semibold">Phản hồi của GVCN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myAppeals.map((a) => {
+                  const badge = APPEAL_BADGE(a.status)
+                  return (
+                    <tr key={a.id} className="border-b border-slate-50 last:border-0">
+                      <td className="py-2.5 pr-3 font-medium text-slate-700">{a.ruleName || '—'}</td>
+                      <td className="max-w-[240px] truncate py-2.5 pr-3 text-xs text-slate-500" title={a.reason}>
+                        {a.reason || '—'}
+                      </td>
+                      <td className="py-2.5 pr-3 text-slate-500">{timeAgo(a.createdAt)}</td>
+                      <td className="py-2.5 pr-3">
+                        <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                      </td>
+                      <td className="max-w-[240px] truncate py-2.5 pr-3 text-xs text-slate-500" title={a.adminNote}>
+                        {a.adminNote || '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <AppealModal
+        open={!!appealTarget}
+        onClose={() => setAppealTarget(null)}
+        violation={appealTarget || {}}
+        ruleName={appealTarget ? ruleMap[appealTarget.ruleId]?.name || '—' : ''}
+        onSubmit={submitAppeal}
+      />
     </div>
   )
 }

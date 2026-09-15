@@ -6,4 +6,7 @@ export const SEEDS = {
   violations: createSeedViolations,
   submissions: () => [],
   lockedWeeks: () => [],
+  notifications: () => [],
+  activityLog: () => [],
+  appeals: () => [],
 }

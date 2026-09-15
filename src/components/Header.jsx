@@ -1,6 +1,31 @@
-import { Menu, LogOut, CloudOff } from 'lucide-react'
+import { Menu, LogOut, CloudOff, Sun, Moon } from 'lucide-react'
+import { useState } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { isLeaderRole } from '../utils/helpers.js'
+import NotificationsBell from './NotificationsBell.jsx'
+
+function ThemeToggle() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const toggle = () => {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    try {
+      localStorage.setItem('et_theme', next ? 'dark' : 'light')
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  return (
+    <button
+      onClick={toggle}
+      title={dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+      className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:bg-slate-50"
+    >
+      {dark ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  )
+}
 
 export default function Header({ title, subtitle, onMenu }) {
   const { session, isAdmin, logout, syncStatus } = useApp()
@@ -36,6 +61,8 @@ export default function Header({ title, subtitle, onMenu }) {
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           {today}
         </div>
+        <NotificationsBell />
+        <ThemeToggle />
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white py-1 pl-1 pr-2 shadow-sm">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 text-xs font-bold text-white">
             {session?.name ? session.name.charAt(0).toUpperCase() : 'U'}

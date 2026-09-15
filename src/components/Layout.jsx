@@ -13,6 +13,8 @@ import StudentWeeks from '../pages/StudentWeeks.jsx'
 import StudentMonthly from '../pages/StudentMonthly.jsx'
 import LeaderView from '../pages/LeaderView.jsx'
 import ApprovalView from '../pages/ApprovalView.jsx'
+import AppealsView from '../pages/AppealsView.jsx'
+import ActivityLogView from '../pages/ActivityLogView.jsx'
 import { isLeaderRole } from '../utils/helpers.js'
 
 const VIEW_META = {
@@ -23,6 +25,8 @@ const VIEW_META = {
     approve: ['Duyệt phiếu tổng hợp', 'Duyệt/từ chối phiếu của lớp trưởng đã chốt'],
     rules: ['Danh mục lỗi vi phạm', 'Các quy định điểm trừ của lớp'],
     reports: ['Báo cáo & xuất dữ liệu', 'Tổng kết tuần/tháng, xếp loại hạnh kiểm, in ấn'],
+    appeals: ['Xử lý khiếu nại', 'Phản hồi đơn khiếu nại của học sinh'],
+    activity: ['Lịch sử hoạt động', 'Nhật ký các thao tác trong hệ thống'],
   },
   student: {
     lead: ['Điều hành của lớp', 'Soạn phiếu tổng hợp vi phạm theo tuần và gửi lên duyệt'],
@@ -48,6 +52,8 @@ export default function Layout() {
         approve: <ApprovalView />,
         rules: <RuleManagement />,
         reports: <ReportView />,
+        appeals: <AppealsView />,
+        activity: <ActivityLogView />,
       }
     : {
         lead: <LeaderView />,

@@ -5,6 +5,9 @@ const LOCAL_KEYS = {
   passwords: 'et_passwords',
   lockedWeeks: 'et_locked_weeks',
   submissions: 'et_submissions',
+  notifications: 'et_notifications',
+  activityLog: 'et_activity',
+  appeals: 'et_appeals',
   session: 'et_session',
 }
 
@@ -13,6 +16,10 @@ const TS_KEYS = {
   rules: 'et_rules_ts',
   violations: 'et_violations_ts',
   lockedWeeks: 'et_lockedWeeks_ts',
+  submissions: 'et_submissions_ts',
+  notifications: 'et_notifications_ts',
+  activityLog: 'et_activity_ts',
+  appeals: 'et_appeals_ts',
 }
 
 function localRead(key) {

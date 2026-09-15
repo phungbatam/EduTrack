@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, X, CalendarDays, Check, Pencil } from 'lucide-react'
+import { Plus, Trash2, X, CalendarDays, Check, Pencil, MessageSquare, Send } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import PointsBadge from './PointsBadge.jsx'
 import {
@@ -10,6 +10,7 @@ import {
   violationDateLabel,
   isBonus,
   submissionDelta,
+  timeAgo,
 } from '../utils/helpers.js'
 
 const field =
@@ -34,12 +35,13 @@ export default function SubmissionModal({
   onReject,
   onApprove,
 }) {
-  const { rules, students, isWeekLocked } = useApp()
+  const { rules, students, isWeekLocked, addComment } = useApp()
   const [lines, setLines] = useState([])
   const [form, setForm] = useState({ studentId: '', ruleId: '', date: todayISO(), note: '' })
   const [editingLineId, setEditingLineId] = useState(null)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [reason, setReason] = useState('')
+  const [commentText, setCommentText] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -48,6 +50,7 @@ export default function SubmissionModal({
     setEditingLineId(null)
     setRejectOpen(false)
     setReason('')
+    setCommentText('')
   }, [open, submission])
 
   const ruleMap = useMemo(() => Object.fromEntries(rules.map((r) => [r.id, r])), [rules])
@@ -241,6 +244,60 @@ export default function SubmissionModal({
               })}
             </ul>
           )}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+          <div className="mb-2 flex items-center gap-1.5">
+            <MessageSquare size={14} className="text-sky-500" />
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Bình luận ({((submission && submission.comments) || []).length})
+            </p>
+          </div>
+          {((submission && submission.comments) || []).length === 0 && (
+            <p className="mb-2 text-xs text-slate-400">Chưa có bình luận nào.</p>
+          )}
+          <ul className="mb-2 space-y-1.5">
+            {((submission && submission.comments) || []).map((c) => (
+              <li key={c.id} className="flex items-start gap-2 rounded-lg bg-white p-2 text-xs">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-100 text-[10px] font-bold text-sky-600">
+                  {c.author && c.author.name ? c.author.name.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-slate-700">
+                    <span className="font-semibold">{c.author && (c.author.name || 'Người dùng')}</span>
+                    {c.author && c.author.role ? <span className="ml-1 text-slate-400">· {c.author.role}</span> : null}
+                  </p>
+                  <p className="mt-0.5 leading-relaxed text-slate-600">{c.text}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400">{timeAgo(c.createdAt)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="flex items-center gap-2">
+            <input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && commentText.trim()) {
+                  addComment(submission.id, commentText)
+                  setCommentText('')
+                }
+              }}
+              placeholder="Viết bình luận cho phiếu này..."
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+            />
+            <button
+              onClick={() => {
+                if (!commentText.trim()) return
+                addComment(submission.id, commentText)
+                setCommentText('')
+              }}
+              disabled={!commentText.trim()}
+              className="flex shrink-0 items-center gap-1 rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white hover:bg-sky-700 disabled:opacity-50"
+            >
+              <Send size={12} /> Gửi
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 flex flex-wrap justify-end gap-2">
