@@ -102,6 +102,8 @@ export default function StudentView() {
 
   const appealOf = (v) => myAppeals.find((a) => a.violationId === v.id)
 
+  const appealable = myViolations.filter((v) => !appealOf(v))
+
   const submitAppeal = (reason) => {
     if (!appealTarget) return
     addAppeal({
@@ -223,6 +225,54 @@ export default function StudentView() {
           color="amber"
           hint={`Thay đổi điểm: ${allTimeMy.delta >= 0 ? '+' : ''}${allTimeMy.delta}`}
         />
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <MessageSquareWarning size={18} className="text-amber-500" />
+          <h3 className="font-bold text-slate-800">Khiếu nại vi phạm</h3>
+          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-600">Dành cho học sinh</span>
+          {appealable.length > 0 && (
+            <span className="ml-auto rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold text-rose-600">
+              {appealable.length} vi phạm có thể khiếu nại
+            </span>
+          )}
+        </div>
+        <p className="mb-4 text-xs text-slate-500">
+          Nếu bạn thấy nội dung vi phạm được ghi chưa đúng (sai lỗi, sai ngày, thiếu căn cứ...), hãy gửi đơn khiếu nại lên giáo viên chủ nhiệm để được xem xét.
+        </p>
+        {appealable.length > 0 ? (
+          <ul className="space-y-2">
+            {appealable.map((v) => {
+              const rule = ruleMap[v.ruleId]
+              return (
+                <li key={v.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-700">{rule ? rule.name : '—'}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {weekdayName(v.date)} {formatDate(v.date)} · <PointsBadge rule={rule} />
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setAppealTarget(v)}
+                    className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100"
+                  >
+                    <Send size={12} /> Viết đơn khiếu nại
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        ) : myAppeals.length > 0 ? (
+          <div className="rounded-xl bg-slate-50 py-4 text-center text-sm text-slate-500">
+            Bạn đã gửi đơn cho tất cả vi phạm hiện có. Theo dõi kết quả ở bảng{' '}
+            <b className="text-slate-700">Các đơn khiếu nại của tôi</b> bên dưới.
+          </div>
+        ) : (
+          <div className="rounded-xl bg-slate-50 py-4 text-center text-sm text-slate-500">
+            Bạn hiện chưa có vi phạm nào nên chưa cần khiếu nại. Khi có vi phạm, bạn có thể gửi đơn ngay tại đây.
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
