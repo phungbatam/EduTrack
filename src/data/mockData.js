@@ -79,7 +79,7 @@ export function createSeedRules() {
     { id: 'r5',  name: 'Sử dụng điện thoại trong giờ học',    points: 4 },
     { id: 'r6',  name: 'Không thuộc bài, không học bài',      points: 3 },
     { id: 'r7',  name: 'Mất trật tự, ồn ào trong lớp',        points: 2 },
-    { id: 'r8',  name: 'Không thực hiện nhiệm vụ trực nhật',  points: 2 },
+    { id: 'r8',  name: 'Không thực hiện nhiệm vụ trực nhật',  points: 2, penaltyForm: 'duty', chargeBase: 1, chargeRatio: 2 },
     { id: 'r9',  name: 'Trang phục chưa đúng quy định',       points: 1 },
     { id: 'r10', name: 'Vô lễ với giáo viên',                 points: 5 },
     { id: 'r11', name: 'Gây gổ, đánh nhau',                   points: 6 },
@@ -88,6 +88,7 @@ export function createSeedRules() {
     { id: 'r14', name: 'Hỗ trợ, giúp đỡ bạn trong học tập',   points: 3, kind: 'bonus' },
     { id: 'r15', name: 'Đạt giải trong hoạt động của trường', points: 10, kind: 'bonus' },
     { id: 'r16', name: 'Đóng góp ý tưởng cho tập thể lớp',    points: 2, kind: 'bonus' },
+    { id: 'r17', name: 'Không tham gia lao động, vệ sinh chung', points: 3, penaltyForm: 'labor', chargeBase: 1, chargeRatio: 2 },
   ]
 }
 

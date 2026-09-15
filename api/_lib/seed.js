@@ -9,4 +9,5 @@ export const SEEDS = {
   notifications: () => [],
   activityLog: () => [],
   appeals: () => [],
+  penalties: () => [],
 }

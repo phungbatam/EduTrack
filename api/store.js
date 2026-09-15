@@ -14,6 +14,7 @@ const COLS = {
   notifications: KEYS.notifications,
   activityLog: KEYS.activityLog,
   appeals: KEYS.appeals,
+  penalties: KEYS.penalties,
 }
 
 export default async function handler(req, res) {
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
   if (!key)
     return res
       .status(400)
-      .json({ error: 'Cột không hợp lệ. Chỉ chấp nhận: students, rules, violations, submissions, lockedWeeks, notifications, activityLog, appeals.' })
+      .json({ error: 'Cột không hợp lệ. Chỉ chấp nhận: students, rules, violations, submissions, lockedWeeks, notifications, activityLog, appeals, penalties.' })
   if (!kvAvailable)
     return res.status(503).json({
       error:
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST' || req.method === 'PUT') {
     const adminOk = await verifyToken(bearer(req))
     const student = adminOk ? null : await verifyStudentToken(bearer(req))
-    const studentWritable = ['submissions', 'notifications', 'activityLog', 'appeals'].includes(col) && student
+    const studentWritable = ['submissions', 'notifications', 'activityLog', 'appeals', 'penalties'].includes(col) && student
     const allowWrite = adminOk || studentWritable
     if (!allowWrite) {
       return res.status(401).json({ error: 'Không có quyền ghi dữ liệu. Vui lòng đăng nhập.' })

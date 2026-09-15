@@ -12,10 +12,11 @@ const STORAGE_KEYS = {
   notifications: 'et_notifications',
   activityLog: 'et_activity',
   appeals: 'et_appeals',
+  penalties: 'et_penalties',
   session: 'et_session',
 }
 
-const DATA_VERSION = 6
+const DATA_VERSION = 7
 const VERSION_KEY = 'et_data_version'
 
 const DATA_KEYS = [
@@ -28,6 +29,7 @@ const DATA_KEYS = [
   'et_notifications',
   'et_activity',
   'et_appeals',
+  'et_penalties',
 ]
 
 function checkDataVersion() {
@@ -97,6 +99,7 @@ export function AppProvider({ children }) {
   const [notifications, setNotifications] = useState([])
   const [activityLog, setActivityLog] = useState([])
   const [appeals, setAppeals] = useState([])
+  const [penalties, setPenalties] = useState([])
   const [session, setSession] = useState(readSession)
   const [toasts, setToasts] = useState([])
   const [ready, setReady] = useState(false)
@@ -114,8 +117,9 @@ export function AppProvider({ children }) {
       api.loadCollection('notifications'),
       api.loadCollection('activityLog'),
       api.loadCollection('appeals'),
+      api.loadCollection('penalties'),
     ])
-      .then(([s, r, v, m, l, n, a, ap]) => {
+      .then(([s, r, v, m, l, n, a, ap, pe]) => {
         if (cancelled) return
         setStudents(Array.isArray(s) ? s : createSeedStudents())
         setRules(Array.isArray(r) ? r : createSeedRules())
@@ -125,6 +129,7 @@ export function AppProvider({ children }) {
         setNotifications(Array.isArray(n) ? n : [])
         setActivityLog(Array.isArray(a) ? a : [])
         setAppeals(Array.isArray(ap) ? ap : [])
+        setPenalties(Array.isArray(pe) ? pe : [])
         setReady(true)
       })
       .catch(() => {
@@ -137,6 +142,7 @@ export function AppProvider({ children }) {
         setNotifications(read(STORAGE_KEYS.notifications, () => []))
         setActivityLog(read(STORAGE_KEYS.activityLog, () => []))
         setAppeals(read(STORAGE_KEYS.appeals, () => []))
+        setPenalties(read(STORAGE_KEYS.penalties, () => []))
         setReady(true)
       })
     return () => {
@@ -149,7 +155,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     const POLL_MS = 30000
-    const keys = ['students', 'rules', 'violations', 'submissions', 'lockedWeeks', 'notifications', 'activityLog', 'appeals']
+    const keys = ['students', 'rules', 'violations', 'submissions', 'lockedWeeks', 'notifications', 'activityLog', 'appeals', 'penalties']
     const setters = {
       students: setStudents,
       rules: setRules,
@@ -159,6 +165,7 @@ export function AppProvider({ children }) {
       notifications: setNotifications,
       activityLog: setActivityLog,
       appeals: setAppeals,
+      penalties: setPenalties,
     }
 
     const poll = async () => {
@@ -251,6 +258,15 @@ export function AppProvider({ children }) {
       setSyncStatus(ok ? 'synced' : 'local-only')
     })
   }, [appeals, ready, writeToken])
+
+  useEffect(() => {
+    if (!ready) return
+    write(STORAGE_KEYS.penalties, penalties)
+    if (!writeToken || isFromPoll.current) return
+    api.saveCollection('penalties', penalties, writeToken).then((ok) => {
+      setSyncStatus(ok ? 'synced' : 'local-only')
+    })
+  }, [penalties, ready, writeToken])
 
   useEffect(() => {
     if (!ready) return
@@ -374,6 +390,37 @@ export function AppProvider({ children }) {
       pushActivity('appeal', status === 'removed' ? `Chấp nhận khiếu nại của ${ap && ap.studentName}` : `Bác khiếu nại của ${ap && ap.studentName}`)
     },
     [meActor, appeals, pushActivity, pushNotification],
+  )
+
+  const setPenalty = useCallback(
+    (entry) => {
+      const actor = meActor()
+      const now = new Date().toISOString()
+      const wk = `${entry.year}-W${entry.week}`
+      setPenalties((p) => {
+        const idx = p.findIndex((x) => x.studentId === entry.studentId && x.year === entry.year && x.week === entry.week)
+        const rec = {
+          id: idx >= 0 ? p[idx].id : `pen-${entry.studentId}-${entry.year}-W${entry.week}`,
+          studentId: entry.studentId,
+          year: entry.year,
+          week: entry.week,
+          laborDays: entry.laborDays != null ? Number(entry.laborDays) : null,
+          dutyDone: Boolean(entry.dutyDone),
+          laborDone: Boolean(entry.laborDone),
+          note: entry.note || '',
+          updatedBy: actor ? actor.name : '',
+          updatedAt: now,
+        }
+        if (idx >= 0) {
+          const next = [...p]
+          next[idx] = rec
+          return next
+        }
+        return [...p, rec]
+      })
+      pushActivity('penalty', `Cập nhật trực nhật/lao động (${wk})`)
+    },
+    [meActor, pushActivity],
   )
 
   const addStudent = useCallback(
@@ -665,6 +712,7 @@ export function AppProvider({ children }) {
     notifications,
     activityLog,
     appeals,
+    penalties,
     meKey,
     session,
     isAdmin,
@@ -702,6 +750,7 @@ export function AppProvider({ children }) {
     addComment,
     addAppeal,
     resolveAppeal,
+    setPenalty,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

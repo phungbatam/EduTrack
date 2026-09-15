@@ -139,6 +139,157 @@ export function ruleLabel(rule) {
   return `${isBonus(rule) ? '+' : '-'}${p}đ`
 }
 
+// ---- Hình thức phạt: Trực nhật / Đi lao động ----
+// Quy tắc:
+//  - Số lần vi phạm để tính ngày phạt ĐẾM TRONG TUẦN (tuần mới reset lại từ 1).
+//  - Lỗi có hình thức phạt (trực nhật/lao động): ngày = lần đầu × hệ số^(số lần trong tuần − 1) → 1, 2, 4, 8...
+//  - Nếu tổng điểm vi phạm TRONG TUẦN của học sinh ≥ 15 → phạt ĐI LAO ĐỘNG 1 ngày (thay cho trực nhật).
+export const PENALTY_FORMS = {
+  duty: { label: 'Trực nhật', cls: 'bg-sky-50 text-sky-600 border-sky-200' },
+  labor: { label: 'Đi lao động', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+}
+
+// Tổng điểm vi phạm trong tuần đạt ngưỡng này → phạt đi lao động
+export const PENALTY_LABOR_POINTS = 15
+
+function sameWeekInfo(a, b) {
+  if (!a || !b) return false
+  return a.year === b.year && a.week === b.week
+}
+
+// Hình thức phạt mà quy định này áp dụng (chỉ lỗi trừ điểm): 'duty' | 'labor' | null
+export function penaltyFormOf(rule) {
+  if (!rule || isBonus(rule)) return null
+  const p = rule.penaltyForm
+  return p && PENALTY_FORMS[p] ? p : null
+}
+
+// Số ngày phạt cho lần vi phạm thứ n (1-based) của cùng một quy định trong tuần.
+// Mặc định: lần đầu 1 ngày, nhân ×2 mỗi lần => 1, 2, 4, 8...
+export function penaltyDaysFor(rule, n) {
+  if (!penaltyFormOf(rule)) return 0
+  const base = Math.max(1, Number(rule.chargeBase) || 1)
+  const ratio = Math.max(1, Number(rule.chargeRatio) || 2)
+  return Math.max(1, Math.round(base * Math.pow(ratio, Math.max(0, n - 1))))
+}
+
+// Số lần (1-based) của một vi phạm trong nhóm cùng học sinh + cùng quy định + CÙNG TUẦN
+// (chỉ tính vi phạm CÓ ĐIỂM - đã duyệt/chờ duyệt, bỏ nháp/từ chối). Tuần mới sẽ reset về 1.
+export function violationRepeat(violations, v) {
+  if (!v || !v.studentId || !v.ruleId) return 1
+  const vWeek = v.date ? isoWeekInfo(v.date) : null
+  const group = violations
+    .filter(
+      (x) =>
+        x &&
+        scoresIn(x) &&
+        x.studentId === v.studentId &&
+        x.ruleId === v.ruleId &&
+        (vWeek ? sameWeekInfo(isoWeekInfo(x.date), vWeek) : true),
+    )
+    .sort(
+      (a, b) =>
+        (a.date || '').localeCompare(b.date || '') ||
+        (a.createdAt || '').localeCompare(b.createdAt || '') ||
+        (a.id || '').localeCompare(b.id || ''),
+    )
+  const idx = group.findIndex((x) => x.id === v.id)
+  return idx >= 0 ? idx + 1 : group.length + 1
+}
+
+// Số lần kế tiếp (1-based) khi ghi 1 vi phạm MỚI cho học sinh + quy định này (trong tuần chỉ định).
+export function nextRepeatRank(violations, studentId, ruleId, week) {
+  return (
+    violations.filter(
+      (x) =>
+        x &&
+        scoresIn(x) &&
+        x.studentId === studentId &&
+        x.ruleId === ruleId &&
+        (week ? sameWeekInfo(isoWeekInfo(x.date), week) : true),
+    ).length + 1
+  )
+}
+
+// Tổng điểm vi phạm (đã duyệt/chờ duyệt) của 1 học sinh trong 1 tuần.
+export function studentWeekPoints(violations, studentId, week, ruleMap) {
+  if (!week) return 0
+  return violations.reduce((s, v) => {
+    if (!v || !scoresIn(v) || v.studentId !== studentId) return s
+    if (!sameWeekInfo(isoWeekInfo(v.date), week)) return s
+    const rule = ruleMap && v.ruleId ? ruleMap[v.ruleId] : null
+    if (!rule || isBonus(rule)) return s
+    return s + (Number(rule.points) || 0)
+  }, 0)
+}
+
+// Tổng số ngày trực nhật của 1 học sinh trong 1 tuần (cộng dồn các lỗi có hình thức trực nhật, theo số lần trong tuần).
+export function studentWeekDutyDays(violations, studentId, week, ruleMap) {
+  const weekVs = violations.filter(
+    (v) => v && scoresIn(v) && v.studentId === studentId && sameWeekInfo(isoWeekInfo(v.date), week),
+  )
+  let total = 0
+  weekVs.forEach((v) => {
+    const rule = ruleMap && v.ruleId ? ruleMap[v.ruleId] : null
+    if (penaltyFormOf(rule) !== 'duty') return
+    total += penaltyDaysFor(rule, violationRepeat(violations, v))
+  })
+  return total
+}
+
+// Kết luận hình phạt của 1 học sinh cho 1 tuần dựa trên tổng điểm vi phạm:
+//  - points ≥ 15 → lao động 1 ngày
+//  - points 1–14 + có lỗi trực nhật → trực nhật (số ngày cộng dồn theo cấp số nhân)
+//  - còn lại → không phạt
+export function studentWeekSanction(violations, studentId, week, ruleMap) {
+  const points = studentWeekPoints(violations, studentId, week, ruleMap)
+  if (points <= 0) return { type: 'none', points, dutyDays: 0, laborDays: 0 }
+  if (points >= PENALTY_LABOR_POINTS) return { type: 'labor', points, dutyDays: 0, laborDays: 1 }
+  const dutyDays = studentWeekDutyDays(violations, studentId, week, ruleMap)
+  if (dutyDays < 1) return { type: 'none', points, dutyDays: 0, laborDays: 0 }
+  return { type: 'duty', points, dutyDays, laborDays: 0 }
+}
+
+// Thông tin hình phạt của một vi phạm (dùng mảng đầy đủ các vi phạm để tính số lần trong tuần).
+// Nếu tuần của vi phạm bị chuyển sang lao động (đủ 15 điểm) thì gán nhãn lao động.
+export function violationPenaltyInfo(violations, v, ruleMap) {
+  if (!v || !v.studentId) return null
+  const rule = ruleMap && v.ruleId ? ruleMap[v.ruleId] : null
+  const form = penaltyFormOf(rule)
+  if (!form) return null
+  const week = v.date ? isoWeekInfo(v.date) : null
+  if (week) {
+    const s = studentWeekSanction(violations, v.studentId, week, ruleMap)
+    if (s.type === 'labor') return { form: 'labor', rank: 0, days: s.laborDays, week: true }
+  }
+  const n = violationRepeat(violations, v)
+  return { form, rank: n, days: penaltyDaysFor(rule, n), week: false }
+}
+
+// Tổng ngày trực nhật / lao động của một tập vi phạm (target), gộp theo (học sinh, tuần)
+// dựa trên toàn bộ vi phạm (all) để tính đúng theo tuần.
+export function penaltyTotals(all, target, ruleMap) {
+  const t = { duty: 0, labor: 0, dutyCount: 0, laborCount: 0 }
+  const seen = new Set()
+  ;(target || []).forEach((v) => {
+    if (!v || !scoresIn(v) || !v.date || !v.studentId) return
+    const week = isoWeekInfo(v.date)
+    if (!week) return
+    const key = `${v.studentId}|${week.year}-W${week.week}`
+    if (seen.has(key)) return
+    seen.add(key)
+    const s = studentWeekSanction(all, v.studentId, week, ruleMap)
+    if (s.type === 'duty') {
+      t.duty += s.dutyDays
+      t.dutyCount += 1
+    } else if (s.type === 'labor') {
+      t.labor += s.laborDays
+      t.laborCount += 1
+    }
+  })
+  return t
+}
+
 export function monthKey(y, m) {
   return `${y}-${String(m).padStart(2, '0')}`
 }

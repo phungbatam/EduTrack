@@ -6,6 +6,7 @@ import PointsBadge from '../components/PointsBadge.jsx'
 import {
   buildStandings,
   currentPeriod,
+  currentWeek,
   periodLabel,
   formatDate,
   timeAgo,
@@ -14,6 +15,9 @@ import {
   GROUP_COLORS,
   ruleDelta,
   weekdayName,
+  violationPenaltyInfo,
+  studentWeekSanction,
+  PENALTY_FORMS,
 } from '../utils/helpers.js'
 
 const APPEAL_BADGE = (status) =>
@@ -122,6 +126,11 @@ export default function StudentView() {
     const delta = all.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
     return { count: all.length, delta }
   }, [violations, me.id, ruleMap])
+
+  const curSanction = useMemo(
+    () => studentWeekSanction(violations, me.id, currentWeek(), ruleMap),
+    [violations, me.id, ruleMap],
+  )
 
   const notifications = useMemo(
     () =>
@@ -351,16 +360,31 @@ export default function StudentView() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <AlertTriangle size={18} className="text-rose-500" />
           <h3 className="font-bold text-slate-800">Lịch sử vi phạm của tôi ({periodLabel(period)})</h3>
+          {curSanction.type !== 'none' && (
+            <div className="ml-auto flex flex-wrap gap-1.5">
+              {curSanction.type === 'duty' && (
+                <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
+                  Tuần này: Trực nhật {curSanction.dutyDays} ngày
+                </span>
+              )}
+              {curSanction.type === 'labor' && (
+                <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                  Tuần này: Đi lao động {curSanction.laborDays} ngày
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
                 <th className="py-2.5 pr-3 font-semibold">Ngày</th>
                 <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm</th>
+                <th className="py-2.5 pr-3 font-semibold">Hình phạt</th>
                 <th className="py-2.5 pr-3 font-semibold">Điểm bị trừ</th>
                 <th className="py-2.5 pr-3 font-semibold">Ghi chú</th>
                 <th className="py-2.5 pr-3 text-right font-semibold">Khiếu nại</th>
@@ -369,7 +393,7 @@ export default function StudentView() {
             <tbody>
               {myViolations.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     Bạn chưa có vi phạm nào trong kỳ này. Cố gắng nhé!
                   </td>
                 </tr>
@@ -378,10 +402,20 @@ export default function StudentView() {
                 const rule = ruleMap[v.ruleId]
                 const ap = appealOf(v)
                 const badge = ap ? APPEAL_BADGE(ap.status) : null
+                const pinfo = violationPenaltyInfo(violations, v, ruleMap)
                 return (
                   <tr key={v.id} className="border-b border-slate-50 last:border-0">
                     <td className="py-2.5 pr-3 text-slate-500">{violationDateLabel(v.date)}</td>
                     <td className="py-2.5 pr-3 font-medium text-slate-700">{rule ? rule.name : '—'}</td>
+                    <td className="py-2.5 pr-3">
+                      {pinfo ? (
+                        <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-bold ${PENALTY_FORMS[pinfo.form].cls}`}>
+                          {PENALTY_FORMS[pinfo.form].label} {pinfo.days} ngày · lần {pinfo.rank}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
+                    </td>
                     <td className="py-2.5 pr-3">
                       <PointsBadge rule={rule} />
                     </td>

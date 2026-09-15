@@ -23,6 +23,7 @@ export const KEYS = {
   notifications: 'et_notifications',
   activityLog: 'et_activity',
   appeals: 'et_appeals',
+  penalties: 'et_penalties',
   admin: 'et_admin',
   adminTokens: 'et_admin_tokens',
   studentTokens: 'et_student_tokens',

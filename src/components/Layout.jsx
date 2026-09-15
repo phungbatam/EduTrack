@@ -15,6 +15,7 @@ import LeaderView from '../pages/LeaderView.jsx'
 import ApprovalView from '../pages/ApprovalView.jsx'
 import AppealsView from '../pages/AppealsView.jsx'
 import ActivityLogView from '../pages/ActivityLogView.jsx'
+import PenaltyView from '../pages/PenaltyView.jsx'
 import { isLeaderRole } from '../utils/helpers.js'
 
 const VIEW_META = {
@@ -22,6 +23,7 @@ const VIEW_META = {
     dashboard: ['Bảng điều khiển', 'Tổng quan điểm thi đua của lớp'],
     students: ['Quản lý học sinh & phân tổ', 'Thêm, sửa, xóa học sinh và xếp tổ'],
     violations: ['Quản lý vi phạm', 'Ghi nhận lỗi vi phạm, chốt tuần làm bằng chứng'],
+    penalties: ['Trực nhật – Lao động', 'Theo dõi và đánh dấu hoàn thành phạt trực nhật/lao động'],
     approve: ['Duyệt phiếu tổng hợp', 'Duyệt/từ chối phiếu của lớp trưởng đã chốt'],
     rules: ['Danh mục lỗi vi phạm', 'Các quy định điểm trừ của lớp'],
     reports: ['Báo cáo & xuất dữ liệu', 'Tổng kết tuần/tháng, xếp loại hạnh kiểm, in ấn'],
@@ -34,6 +36,7 @@ const VIEW_META = {
     home: ['Trang chủ', 'Theo dõi điểm thi đua của bạn'],
     weeks: ['Vi phạm theo tuần', 'Xem vi phạm từng tuần và tuần được chốt'],
     monthly: ['Tổng kết tháng', 'Xếp loại hạnh kiểm theo điểm trung bình'],
+    penalties: ['Trực nhật – Lao động', 'Danh sách học sinh phải trực nhật/lao động trong tuần'],
   },
 }
 
@@ -49,6 +52,7 @@ export default function Layout() {
         dashboard: <Dashboard />,
         students: <StudentManagement />,
         violations: <ViolationManagement />,
+        penalties: <PenaltyView />,
         approve: <ApprovalView />,
         rules: <RuleManagement />,
         reports: <ReportView />,
@@ -61,6 +65,7 @@ export default function Layout() {
         home: <StudentView />,
         weeks: <StudentWeeks />,
         monthly: <StudentMonthly />,
+        penalties: <PenaltyView />,
       }
 
   const meta = VIEW_META[isAdmin ? 'admin' : 'student'][view]

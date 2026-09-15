@@ -15,10 +15,16 @@ import {
   VIOLATION_STATUS,
   isBonus,
   ruleDelta,
+  penaltyFormOf,
+  nextRepeatRank,
+  penaltyDaysFor,
+  violationPenaltyInfo,
+  penaltyTotals,
+  PENALTY_FORMS,
 } from '../utils/helpers.js'
 
 function ViolationForm({ initial, onSave, onCancel, onError }) {
-  const { students, rules, isWeekLocked } = useApp()
+  const { students, rules, violations, isWeekLocked } = useApp()
   const [form, setForm] = useState(() => ({
     studentId: initial ? initial.studentId : '',
     ruleId: initial ? initial.ruleId : '',
@@ -30,6 +36,15 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
   const stu = students.find((s) => s.id === form.studentId)
   const week = form.date ? isoWeekInfo(form.date) : null
   const locked = week ? isWeekLocked(week) : false
+  const pf = penaltyFormOf(rule)
+  const pfWeek = form.date ? isoWeekInfo(form.date) : null
+  const pfRank =
+    pf && form.studentId
+      ? initial && initial.id && initial.studentId === form.studentId && initial.ruleId === form.ruleId
+        ? violationRepeat(violations, initial)
+        : nextRepeatRank(violations, form.studentId, form.ruleId, pfWeek)
+      : 0
+  const pfDays = pf && pfRank ? penaltyDaysFor(rule, pfRank) : 0
 
   const submit = (e) => {
     e.preventDefault()
@@ -97,6 +112,12 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
               ) : (
                 <span className="font-bold text-rose-500">Điểm trừ: -{rule.points} điểm</span>
               )}
+            </p>
+          )}
+          {pf && form.studentId && !isBonus(rule) && (
+            <p className="mt-1 flex items-center gap-1.5 rounded-md bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-700">
+              <CalendarDays size={12} />
+              {PENALTY_FORMS[pf].label}: <b>{pfDays} ngày</b> (lần thứ {pfRank} của học sinh này với lỗi trên)
             </p>
           )}
         </div>
@@ -207,6 +228,7 @@ export default function ViolationManagement() {
   }, [violations, students, ruleMap, search, ruleFilter, statusFilter, period])
 
   const totalDelta = filtered.reduce((s, v) => s + ruleDelta(ruleMap[v.ruleId]), 0)
+  const penaltyTotal = penaltyTotals(violations, filtered, ruleMap)
 
   const weekCount = violations.filter((v) => matchesPeriod(v.date, { type: 'week', ...current })).length
 
@@ -248,7 +270,7 @@ export default function ViolationManagement() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs text-slate-500">Vi phạm tuần này</p>
           <p className="mt-1 text-2xl font-extrabold text-slate-800">{weekCount} lỗi</p>
@@ -264,6 +286,13 @@ export default function ViolationManagement() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs text-slate-500">Danh mục lỗi hiện có</p>
           <p className="mt-1 text-2xl font-extrabold text-slate-800">{rules.length}</p>
+        </div>
+        <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-4 shadow-sm">
+          <p className="text-xs text-slate-500">Trực nhật / Lao động (kỳ lọc)</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-800">
+            Trực nhật: <span className="text-sky-600">{penaltyTotal.duty} ngày</span> · Lao động:{' '}
+            <span className="text-emerald-600">{penaltyTotal.labor} ngày</span>
+          </p>
         </div>
       </div>
 
@@ -350,12 +379,13 @@ export default function ViolationManagement() {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[820px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-400">
                 <th className="px-4 py-3 font-semibold">Ngày / Tuần</th>
                 <th className="px-4 py-3 font-semibold">Học sinh</th>
                 <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
+                <th className="px-4 py-3 font-semibold">Hình thức phạt</th>
                 <th className="px-4 py-3 font-semibold">Điểm</th>
                 <th className="px-4 py-3 font-semibold">Ghi chú</th>
                 <th className="px-4 py-3 font-semibold">Trạng thái</th>
@@ -365,7 +395,7 @@ export default function ViolationManagement() {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
                     Không có vi phạm nào trong kỳ này.
                   </td>
                 </tr>
@@ -397,6 +427,18 @@ export default function ViolationManagement() {
                       <p className="text-[11px] text-slate-400">{stu ? `${stu.code} · Tổ ${stu.group}` : ''}</p>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{rule ? rule.name : '—'}</td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const pinfo = violationPenaltyInfo(violations, v, ruleMap)
+                        if (!pinfo) return <span className="text-xs text-slate-300">—</span>
+                        const pf = PENALTY_FORMS[pinfo.form]
+                        return (
+                          <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-bold ${pf.cls}`}>
+                            {pf.label} {pinfo.days} ngày · lần {pinfo.rank}
+                          </span>
+                        )
+                      })()}
+                    </td>
                     <td className="px-4 py-3">
                       <PointsBadge rule={rule} />
                     </td>

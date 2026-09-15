@@ -26,6 +26,8 @@ import {
   academicLabel,
   academicCls,
   currentWeek,
+  violationPenaltyInfo,
+  PENALTY_FORMS,
 } from '../utils/helpers.js'
 import { exportReportXlsx } from '../utils/excel.js'
 import { exportNodeToPdf } from '../utils/pdf.js'
@@ -442,12 +444,13 @@ export default function ReportView() {
           <section>
             <SectionTitle>6. Chi tiết các lỗi vi phạm trong kỳ</SectionTitle>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px] text-left text-sm">
+              <table className="w-full min-w-[680px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <th className="px-4 py-3 font-semibold">Ngày</th>
                     <th className="px-4 py-3 font-semibold">Học sinh</th>
                     <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
+                    <th className="px-4 py-3 font-semibold">Hình phạt</th>
                     <th className="px-4 py-3 font-semibold">Điểm</th>
                     <th className="px-4 py-3 font-semibold">Ghi chú</th>
                   </tr>
@@ -456,6 +459,7 @@ export default function ReportView() {
                   {filteredPeriod.map((v) => {
                     const rule = ruleMap[v.ruleId]
                     const stu = students.find((s) => s.id === v.studentId)
+                    const pinfo = violationPenaltyInfo(violations, v, ruleMap)
                     return (
                       <tr key={v.id} className="border-b border-slate-50 last:border-0">
                         <td className="px-4 py-2 text-slate-500">{violationDateLabel(v.date)}</td>
@@ -464,6 +468,15 @@ export default function ReportView() {
                           <span className="text-xs text-slate-400"> · Tổ {stu ? stu.group : '?'}</span>
                         </td>
                         <td className="px-4 py-2 text-slate-600">{rule ? rule.name : '—'}</td>
+                        <td className="px-4 py-2">
+                          {pinfo ? (
+                            <span className={`inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-[10px] font-bold ${PENALTY_FORMS[pinfo.form].cls}`}>
+                              {PENALTY_FORMS[pinfo.form].label} {pinfo.days} ngày · lần {pinfo.rank}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-300">—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2"><PointsBadge rule={rule} /></td>
                         <td className="max-w-[200px] truncate px-4 py-2 text-xs text-slate-400">{v.note || '—'}</td>
                       </tr>

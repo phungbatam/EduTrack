@@ -8,6 +8,7 @@ const LOCAL_KEYS = {
   notifications: 'et_notifications',
   activityLog: 'et_activity',
   appeals: 'et_appeals',
+  penalties: 'et_penalties',
   session: 'et_session',
 }
 
@@ -20,6 +21,7 @@ const TS_KEYS = {
   notifications: 'et_notifications_ts',
   activityLog: 'et_activity_ts',
   appeals: 'et_appeals_ts',
+  penalties: 'et_penalties_ts',
 }
 
 function localRead(key) {

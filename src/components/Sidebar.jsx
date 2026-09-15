@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   MessageSquareWarning,
   History,
+  Brush,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import { isLeaderRole } from '../utils/helpers.js'
@@ -21,6 +22,7 @@ const ADMIN_NAV = [
   { key: 'dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
   { key: 'students', label: 'Học sinh & Phân tổ', icon: Users },
   { key: 'violations', label: 'Quản lý vi phạm', icon: AlertTriangle },
+  { key: 'penalties', label: 'Trực nhật - Lao động', icon: Brush },
   { key: 'approve', label: 'Duyệt phiếu', icon: ShieldCheck },
   { key: 'appeals', label: 'Xử lý khiếu nại', icon: MessageSquareWarning },
   { key: 'rules', label: 'Danh mục lỗi vi phạm', icon: ClipboardList },
@@ -38,16 +40,20 @@ const STUDENT_NAV = [
   { key: 'monthly', label: 'Tổng kết tháng', icon: BarChart3 },
 ]
 
+const PENALTY_NAV = [{ key: 'penalties', label: 'Trực nhật - Lao động', icon: Brush }]
+
 export default function Sidebar({ view, onNavigate, open, onClose }) {
   const { session, isAdmin, logout, resetDemo, notify } = useApp()
   const isLeader = !!session && !isAdmin && isLeaderRole(session.roleLabel)
   const isHead = session && !isAdmin && session.roleLabel === 'Lớp trưởng'
+  const isLaborLeader = session && !isAdmin && session.roleLabel === 'Lớp phó lao động'
+  const penaltyNav = isLaborLeader ? PENALTY_NAV : []
   const nav = isAdmin
     ? ADMIN_NAV
     : isLeader
       ? isHead
-        ? [...LEAD_NAV, ...LEAD_APPROVE_NAV, ...STUDENT_NAV]
-        : [...LEAD_NAV, ...STUDENT_NAV]
+        ? [...LEAD_NAV, ...penaltyNav, ...LEAD_APPROVE_NAV, ...STUDENT_NAV]
+        : [...LEAD_NAV, ...penaltyNav, ...STUDENT_NAV]
       : STUDENT_NAV
 
   return (
