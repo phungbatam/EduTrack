@@ -2,7 +2,7 @@ import { KEYS, kvGet, kvSet, kvAvailable } from './_lib/kv.js'
 import { sha256 } from './_lib/hash.js'
 import { SEEDS } from './_lib/seed.js'
 import { ensureSeed } from './_lib/seed_version.js'
-import { createToken } from './_lib/token.js'
+import { createToken, createStudentToken } from './_lib/token.js'
 
 export const config = { runtime: 'nodejs' }
 
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   if (kind === 'admin') {
     let admin = await kvGet(KEYS.admin)
     const LEGACY = { account: 'admin', passHash: sha256('123456') }
-    const NEW = { account: 'AdminTNT1009', passHash: sha256('TNT0917@aF') }
+    const NEW = { account: '1009', passHash: sha256('TNT0917@aF') }
     if (!admin || typeof admin !== 'object') {
       admin = { ...NEW }
       await kvSet(KEYS.admin, admin)
@@ -52,6 +52,7 @@ export default async function handler(req, res) {
     const hash = passwords[stu.id]
     if (!hash) return res.status(401).json({ error: 'Mật khẩu chưa được cấp. Hãy nhờ giáo viên chủ nhiệm đặt mật khẩu.' })
     if (sha256(password) !== hash) return res.status(401).json({ error: 'Sai mật khẩu. Vui lòng thử lại.' })
+    const token = await createStudentToken(stu)
     return res.json({
       role: 'student',
       id: stu.id,
@@ -60,6 +61,7 @@ export default async function handler(req, res) {
       group: stu.group,
       roleLabel: stu.role,
       manageGroup: stu.manageGroup || stu.group || null,
+      token,
     })
   }
 

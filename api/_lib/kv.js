@@ -22,6 +22,7 @@ export const KEYS = {
   lockedWeeks: 'et_locked_weeks',
   admin: 'et_admin',
   adminTokens: 'et_admin_tokens',
+  studentTokens: 'et_student_tokens',
   seedVersion: 'et_seed_version',
 }
 

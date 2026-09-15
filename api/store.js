@@ -1,7 +1,7 @@
 import { KEYS, kvGet, kvSet, kvAvailable } from './_lib/kv.js'
 import { SEEDS } from './_lib/seed.js'
 import { ensureSeed } from './_lib/seed_version.js'
-import { bearer, verifyToken } from './_lib/token.js'
+import { bearer, verifyToken, verifyStudentToken } from './_lib/token.js'
 
 export const config = { runtime: 'nodejs' }
 
@@ -37,8 +37,11 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST' || req.method === 'PUT') {
-    if (!(await verifyToken(bearer(req)))) {
-      return res.status(401).json({ error: 'Không có quyền ghi dữ liệu. Vui lòng đăng nhập quản trị.' })
+    const adminOk = await verifyToken(bearer(req))
+    const student = adminOk ? null : await verifyStudentToken(bearer(req))
+    const allowWrite = adminOk || (col === 'submissions' && student)
+    if (!allowWrite) {
+      return res.status(401).json({ error: 'Không có quyền ghi dữ liệu. Vui lòng đăng nhập.' })
     }
     const data = Array.isArray(req.body && req.body.data) ? req.body.data : []
     await kvSet(key, data)

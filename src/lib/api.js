@@ -154,7 +154,9 @@ export async function adminLogin({ account, password }) {
 export async function studentLogin({ code, password }) {
   try {
     const res = await fetchJSON('/api/auth', { method: 'POST', body: JSON.stringify({ kind: 'student', code, password }) })
-    return await parseOrThrow(res)
+    const body = await parseOrThrow(res)
+    if (body && body.token) return body
+    return { ...body, token: `local-${Date.now()}-${Math.random().toString(36).slice(2)}` }
   } catch (e) {
     if (isApiUnavailable(e)) {
       const students = localRead(LOCAL_KEYS.students) || []
@@ -165,7 +167,16 @@ export async function studentLogin({ code, password }) {
       const hash = passwords[stu.id]
       if (!hash) throw new Error('Mật khẩu chưa được cấp. Hãy nhờ giáo viên chủ nhiệm đặt mật khẩu.')
       if (sha256(password) !== hash) throw new Error('Sai mật khẩu. Vui lòng thử lại.')
-      return { role: 'student', id: stu.id, name: stu.name, code: stu.code, group: stu.group, roleLabel: stu.role, manageGroup: stu.manageGroup || stu.group || null }
+      return {
+        role: 'student',
+        id: stu.id,
+        name: stu.name,
+        code: stu.code,
+        group: stu.group,
+        roleLabel: stu.role,
+        manageGroup: stu.manageGroup || stu.group || null,
+        token: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      }
     }
     throw e
   }

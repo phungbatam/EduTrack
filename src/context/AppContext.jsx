@@ -12,10 +12,10 @@ const STORAGE_KEYS = {
   session: 'et_session',
 }
 
-const DATA_VERSION = 4
+const DATA_VERSION = 5
 const VERSION_KEY = 'et_data_version'
 
-const DATA_KEYS = ['et_students', 'et_rules', 'et_violations', 'et_passwords', 'et_locked_weeks']
+const DATA_KEYS = ['et_students', 'et_rules', 'et_violations', 'et_passwords', 'et_locked_weeks', 'et_submissions']
 
 function checkDataVersion() {
   try {
@@ -149,6 +149,7 @@ export function AppProvider({ children }) {
   }, [ready])
 
   const adminToken = session && session.role === 'admin' ? session.token : null
+  const writeToken = adminToken || (session && session.role === 'student' && session.token) || null
 
   useEffect(() => {
     if (!ready) return
@@ -183,12 +184,12 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!ready) return
     write(STORAGE_KEYS.submissions, submissions)
-    if (!adminToken || isFromPoll.current) return
+    if (!writeToken || isFromPoll.current) return
     setSyncStatus('saving')
-    api.saveCollection('submissions', submissions, adminToken).then((ok) => {
+    api.saveCollection('submissions', submissions, writeToken).then((ok) => {
       setSyncStatus(ok ? 'synced' : 'local-only')
     })
-  }, [submissions, ready, adminToken])
+  }, [submissions, ready, writeToken])
 
   useEffect(() => {
     if (!ready) return
