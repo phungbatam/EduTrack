@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
   session: 'et_session',
 }
 
-const DATA_VERSION = 7
+const DATA_VERSION = 8
 const VERSION_KEY = 'et_data_version'
 
 const DATA_KEYS = [
@@ -322,6 +322,20 @@ export function AppProvider({ children }) {
     [meActor],
   )
 
+  const deleteActivity = useCallback(
+    (id) => {
+      const prev = activityLog.find((a) => a.id === id)
+      setActivityLog((p) => p.filter((a) => a.id !== id))
+      pushActivity('activity', `Xóa 1 bản ghi nhật ký${prev && prev.detail ? `: "${String(prev.detail).slice(0, 60)}"` : ''}`)
+    },
+    [activityLog, pushActivity],
+  )
+
+  const clearActivityLog = useCallback(() => {
+    setActivityLog([])
+    pushActivity('activity', 'Xóa toàn bộ lịch sử hoạt động')
+  }, [pushActivity])
+
   const pushNotification = useCallback(({ roles = [], userIds = [], text, kind = 'info' }) => {
     setNotifications((p) => [
       { id: `nt-${uid()}`, roles, userIds: userIds.map((u) => `u-${u}`), text, kind, createdAt: new Date().toISOString(), readBy: [] },
@@ -397,13 +411,19 @@ export function AppProvider({ children }) {
       const actor = meActor()
       const now = new Date().toISOString()
       const wk = `${entry.year}-W${entry.week}`
+      const isManual = Boolean(entry.manual)
       setPenalties((p) => {
-        const idx = p.findIndex((x) => x.studentId === entry.studentId && x.year === entry.year && x.week === entry.week)
+        const idx = p.findIndex(
+          (x) => Boolean(x.manual) === isManual && x.studentId === entry.studentId && x.year === entry.year && x.week === entry.week,
+        )
         const rec = {
-          id: idx >= 0 ? p[idx].id : `pen-${entry.studentId}-${entry.year}-W${entry.week}`,
+          id: idx >= 0 ? p[idx].id : `pen-${entry.studentId}-${entry.year}-W${entry.week}${isManual ? `-m${Date.now().toString(36)}` : ''}`,
           studentId: entry.studentId,
           year: entry.year,
           week: entry.week,
+          manual: isManual,
+          form: isManual ? (entry.form === 'labor' ? 'labor' : 'duty') : null,
+          days: isManual ? Math.max(1, Number(entry.days) || 1) : null,
           laborDays: entry.laborDays != null ? Number(entry.laborDays) : null,
           dutyDone: Boolean(entry.dutyDone),
           laborDone: Boolean(entry.laborDone),
@@ -418,9 +438,29 @@ export function AppProvider({ children }) {
         }
         return [...p, rec]
       })
-      pushActivity('penalty', `Cập nhật trực nhật/lao động (${wk})`)
+      pushActivity(
+        'penalty',
+        isManual
+          ? `Gán phạt ${entry.form === 'labor' ? 'đi lao động' : 'trực nhật'} ${Math.max(1, Number(entry.days) || 1)} ngày (${wk})${entry.note ? ` - ${entry.note}` : ''}`
+          : `Cập nhật trực nhật/lao động (${wk})`,
+      )
     },
     [meActor, pushActivity],
+  )
+
+  const deletePenalty = useCallback(
+    (id) => {
+      const prev = penalties.find((x) => x.id === id)
+      setPenalties((p) => p.filter((x) => x.id !== id))
+      if (prev) {
+        const stu = students.find((s) => s.id === prev.studentId)
+        pushActivity(
+          'penalty',
+          `Hủy phạt ${prev.form === 'labor' ? 'đi lao động' : 'trực nhật'} cho ${stu ? stu.name : prev.studentId} (${prev.year}-W${prev.week})`,
+        )
+      }
+    },
+    [penalties, students, pushActivity],
   )
 
   const addStudent = useCallback(
@@ -751,6 +791,9 @@ export function AppProvider({ children }) {
     addAppeal,
     resolveAppeal,
     setPenalty,
+    deletePenalty,
+    deleteActivity,
+    clearActivityLog,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

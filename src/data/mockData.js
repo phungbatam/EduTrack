@@ -50,6 +50,7 @@ const DEFAULT_LEADERS = {
   'HS003': { role: 'Tổ trưởng', manageGroup: 1 },
   'HS004': { role: 'Lớp phó học tập' },
   'HS008': { role: 'Tổ trưởng', manageGroup: 2 },
+  'HS024': { role: 'Lớp phó lao động' },
   'HS026': { role: 'Lớp trưởng' },
   'HS032': { role: 'Tổ trưởng', manageGroup: 3 },
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Clock, History, Search, ShieldCheck } from 'lucide-react'
+import { Clock, History, Search, ShieldCheck, Trash2, Eraser } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import { timeAgo, todayISO } from '../utils/helpers.js'
 
@@ -12,10 +12,11 @@ const ACTION_LABEL = {
   week: { label: 'Tuần', cls: 'bg-amber-50 text-amber-600 border-amber-200', icon: '📅' },
   comment: { label: 'Bình luận', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200', icon: '💬' },
   appeal: { label: 'Khiếu nại', cls: 'bg-violet-50 text-violet-600 border-violet-200', icon: '📨' },
+  activity: { label: 'Nhật ký', cls: 'bg-slate-100 text-slate-600 border-slate-200', icon: '🗑️' },
 }
 
 export default function ActivityLogView() {
-  const { activityLog } = useApp()
+  const { activityLog, notify, deleteActivity, clearActivityLog } = useApp()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
 
@@ -65,14 +66,28 @@ export default function ActivityLogView() {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => {
+              if (window.confirm(`Xác nhận xóa TOÀN BỘ ${filtered.length} bản ghi lịch sử hoạt động?\n\nHành động này không thể hoàn tác.`)) {
+                clearActivityLog()
+                notify('Đã xóa toàn bộ lịch sử hoạt động.')
+              }
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-100"
+          >
+            <Eraser size={14} /> Xóa toàn bộ
+          </button>
           <span className="text-xs text-slate-400">Hôm nay: {todayISO()}</span>
         </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
           <p className="flex items-center gap-1.5 text-sm text-slate-500">
             <Clock size={14} /> Tổng: {filtered.length} hoạt động
+          </p>
+          <p className="text-[11px] text-slate-400">
+            Bấm <Trash2 size={11} className="inline" /> ở mỗi dòng để xóa từng bản ghi nhật ký.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -83,12 +98,13 @@ export default function ActivityLogView() {
                 <th className="px-4 py-3 font-semibold">Loại</th>
                 <th className="px-4 py-3 font-semibold">Người thực hiện</th>
                 <th className="px-4 py-3 font-semibold">Chi tiết</th>
+                <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={5} className="px-4 py-10 text-center text-slate-400">
                     Chưa có hoạt động nào.
                   </td>
                 </tr>
@@ -109,6 +125,20 @@ export default function ActivityLogView() {
                       <p className="text-[11px] text-slate-400">{actor.role || ''}</p>
                     </td>
                     <td className="max-w-[420px] px-4 py-2.5 text-xs text-slate-600">{a.detail || '—'}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Xóa bản ghi nhật ký này?')) {
+                            deleteActivity(a.id)
+                            notify('Đã xóa bản ghi nhật ký.')
+                          }
+                        }}
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                        title="Xóa bản ghi này"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
                   </tr>
                 )
               })}

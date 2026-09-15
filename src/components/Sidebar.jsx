@@ -46,8 +46,9 @@ export default function Sidebar({ view, onNavigate, open, onClose }) {
   const { session, isAdmin, logout, resetDemo, notify } = useApp()
   const isLeader = !!session && !isAdmin && isLeaderRole(session.roleLabel)
   const isHead = session && !isAdmin && session.roleLabel === 'Lớp trưởng'
-  const isLaborLeader = session && !isAdmin && session.roleLabel === 'Lớp phó lao động'
-  const penaltyNav = isLaborLeader ? PENALTY_NAV : []
+  const isPenaltyManager =
+    session && !isAdmin && (session.roleLabel === 'Lớp phó lao động' || session.roleLabel === 'Lớp phó học tập')
+  const penaltyNav = isPenaltyManager ? PENALTY_NAV : []
   const nav = isAdmin
     ? ADMIN_NAV
     : isLeader
