@@ -58,7 +58,8 @@ function read(key, seed) {
 
 function readSession() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.session)
+    let raw = localStorage.getItem(STORAGE_KEYS.session)
+    if (!raw) raw = sessionStorage.getItem(STORAGE_KEYS.session)
     if (raw) {
       const data = JSON.parse(raw)
       if (data && typeof data === 'object' && (data.role === 'admin' || data.role === 'student')) {
@@ -290,14 +291,29 @@ export function AppProvider({ children }) {
     setToasts((t) => t.filter((x) => x.id !== id))
   }, [])
 
-  const login = useCallback((user) => {
+  const login = useCallback((user, remember = true) => {
     setSession(user)
-    write(STORAGE_KEYS.session, user)
+    try {
+      if (remember) {
+        localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(user))
+        sessionStorage.removeItem(STORAGE_KEYS.session)
+      } else {
+        sessionStorage.setItem(STORAGE_KEYS.session, JSON.stringify(user))
+        localStorage.removeItem(STORAGE_KEYS.session)
+      }
+    } catch (e) {
+      console.warn('Không lưu được phiên đăng nhập:', e)
+    }
   }, [])
 
   const logout = useCallback(() => {
     setSession(null)
     clear(STORAGE_KEYS.session)
+    try {
+      sessionStorage.removeItem(STORAGE_KEYS.session)
+    } catch (e) {
+      /* ignore */
+    }
   }, [])
 
   const isAdmin = Boolean(session && session.role === 'admin')
@@ -739,6 +755,11 @@ export function AppProvider({ children }) {
       .catch((e) => console.warn('Khôi phục dữ liệu từ xa thất bại:', e))
       .then(() => {
         Object.keys(STORAGE_KEYS).forEach((k) => clear(STORAGE_KEYS[k]))
+        try {
+          Object.keys(STORAGE_KEYS).forEach((k) => sessionStorage.removeItem(STORAGE_KEYS[k]))
+        } catch (e) {
+          /* ignore */
+        }
         window.location.reload()
       })
   }, [adminToken])

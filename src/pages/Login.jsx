@@ -10,6 +10,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [studentPassword, setStudentPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -20,7 +21,7 @@ export default function Login() {
     try {
       if (role === 'admin') {
         const user = await api.adminLogin({ account, password })
-        login(user)
+        login(user, remember)
         notify('Đăng nhập quản trị thành công!')
       } else {
         if (!code.trim()) {
@@ -29,7 +30,7 @@ export default function Login() {
           return
         }
         const user = await api.studentLogin({ code, password: studentPassword })
-        login(user)
+        login(user, remember)
         notify(`Xin chào ${user.name}, chúc bạn học tốt!`)
       }
     } catch (err) {
@@ -185,6 +186,16 @@ export default function Login() {
                   {error}
                 </div>
               )}
+
+              <label className="flex cursor-pointer items-center gap-2.5 select-none">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 accent-indigo-600"
+                />
+                <span className="text-sm text-slate-600">Lưu đăng nhập trên thiết bị này</span>
+              </label>
 
               <button
                 type="submit"
