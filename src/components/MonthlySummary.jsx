@@ -82,7 +82,7 @@ export default function MonthlySummary({ year, month, studentId }) {
   const pendingNote = pendingCount > 0 && (
     <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
       <AlertTriangle size={16} />
-      Có {pendingCount} vi phạm trong tháng đang chờ duyệt - bảng tổng kết này đang tính điểm tạm thời. Khi duyệt xong điểm sẽ được cập nhật lại.
+      Có {pendingCount} ghi nhận trong tháng đang chờ duyệt - bảng tổng kết này đang tính điểm tạm thời. Khi duyệt xong điểm sẽ được cập nhật lại.
     </div>
   )
 
@@ -96,7 +96,7 @@ export default function MonthlySummary({ year, month, studentId }) {
               <FileText size={20} className="text-indigo-500" /> TỔNG KẾT {monthLabel({ month, year })} · LỚP 12A3
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Tổng số tuần làm việc: {weeks.length} · Số vi phạm đã tính điểm trong tháng: {inMonth.length}
+              Tổng số tuần làm việc: {weeks.length} · Số ghi nhận đã tính điểm trong tháng: {inMonth.length}
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-500">
@@ -273,7 +273,7 @@ export default function MonthlySummary({ year, month, studentId }) {
                 <th className={th}>Ngày</th>
                 <th className={th}>Học sinh</th>
                 <th className={th}>Mã HS</th>
-                <th className={th}>Lỗi vi phạm</th>
+                <th className={th}>Lỗi vi phạm / khen thưởng</th>
                 <th className={`${th} text-right`}>Điểm</th>
                 <th className={th}>Người ghi</th>
                 <th className={th}>Ghi chú</th>
@@ -283,7 +283,7 @@ export default function MonthlySummary({ year, month, studentId }) {
             <tbody>
               {diary.length === 0 && (
                 <tr>
-                  <td colSpan={8} className={`${td} text-center text-slate-400`}>Không có vi phạm nào trong tháng này.</td>
+                  <td colSpan={8} className={`${td} text-center text-slate-400`}>Không có ghi nhận nào trong tháng này.</td>
                 </tr>
               )}
               {diary.map((v) => {

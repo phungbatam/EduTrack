@@ -213,7 +213,7 @@ export default function ReportView() {
             <p className="mt-1 text-xl font-extrabold text-slate-800">{students.length}</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <p className="text-xs text-slate-500">Số vi phạm trong kỳ</p>
+            <p className="text-xs text-slate-500">Số ghi nhận trong kỳ</p>
             <p className="mt-1 text-xl font-extrabold text-rose-600">{totalMeanwhile}</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
@@ -396,15 +396,15 @@ export default function ReportView() {
         </section>
 
         <section>
-          <SectionTitle>4. Tổng hợp vi phạm theo loại lỗi</SectionTitle>
+          <SectionTitle>4. Tổng hợp vi phạm / khen thưởng theo loại</SectionTitle>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
+                  <th className="px-4 py-3 font-semibold">Lỗi vi phạm / khen thưởng</th>
                   <th className="px-4 py-3 font-semibold">Số lần</th>
-                  <th className="px-4 py-3 font-semibold">Điểm trừ / lần</th>
-                  <th className="px-4 py-3 font-semibold">Tổng điểm trừ</th>
+                  <th className="px-4 py-3 font-semibold">Điểm / lần</th>
+                  <th className="px-4 py-3 font-semibold">Tổng điểm</th>
                 </tr>
               </thead>
               <tbody>
@@ -420,7 +420,7 @@ export default function ReportView() {
                 ) : (
                   <tr>
                     <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                      Không có vi phạm nào trong kỳ.
+                      Không có ghi nhận nào trong kỳ.
                     </td>
                   </tr>
                 )}
@@ -442,14 +442,14 @@ export default function ReportView() {
 
         {filteredPeriod.length > 0 && (
           <section>
-            <SectionTitle>6. Chi tiết các lỗi vi phạm trong kỳ</SectionTitle>
+            <SectionTitle>6. Chi tiết các ghi nhận trong kỳ</SectionTitle>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <th className="px-4 py-3 font-semibold">Ngày</th>
                     <th className="px-4 py-3 font-semibold">Học sinh</th>
-                    <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
+                    <th className="px-4 py-3 font-semibold">Lỗi vi phạm / khen thưởng</th>
                     <th className="px-4 py-3 font-semibold">Hình phạt</th>
                     <th className="px-4 py-3 font-semibold">Điểm</th>
                     <th className="px-4 py-3 font-semibold">Ghi chú</th>
@@ -540,7 +540,7 @@ function ReportHeader({ title, locked, periodLabelText, totalMeanwhile, classAvg
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-4">
         <div className="text-center">
-          <p className="text-[11px] text-slate-500">Số vi phạm</p>
+          <p className="text-[11px] text-slate-500">Số ghi nhận</p>
           <p className="text-lg font-extrabold text-rose-600">{totalMeanwhile}</p>
         </div>
         <div className="text-center">

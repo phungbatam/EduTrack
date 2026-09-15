@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import { formatDate, GROUP_NAMES, periodLabel, conductOf, ACADEMIC_LEVELS, academicLabel } from './helpers.js'
+import { formatDate, GROUP_NAMES, periodLabel, conductOf, ACADEMIC_LEVELS, academicLabel, isBonus } from './helpers.js'
 
 function normHeader(h) {
   return String(h || '')
@@ -154,17 +154,19 @@ export function exportReportXlsx(
     Tổ: GROUP_NAMES[r.student.group],
     'Chức vụ': r.student.role || 'Học sinh',
     'Số lỗi': r.violations,
+    'Số khen': r.bonuses,
     'Điểm trừ': r.deducted,
+    'Điểm cộng': r.bonus,
     'Điểm thi đua': r.score,
     'Xếp loại': conductOf(r.score).label,
   }))
-  sheet(wb, 'Chi tiết học sinh', studentRows, [9, 13, 28, 9, 16, 9, 9, 12, 11])
+  sheet(wb, 'Chi tiết học sinh', studentRows, [9, 13, 28, 9, 16, 9, 9, 9, 9, 12, 11])
 
   const ruleRows = rStats.map((s) => ({
     'Tên lỗi': s.rule.name,
-    'Số lần vi phạm': s.count,
-    'Điểm trừ / lần': `-${s.rule.points}`,
-    'Tổng điểm trừ': s.count * s.rule.points,
+    'Số lần': s.count,
+    'Điểm / lần': `${isBonus(s.rule) ? '+' : '-'}${s.rule.points}`,
+    'Tổng điểm': `${s.count * (isBonus(s.rule) ? s.rule.points : -s.rule.points) >= 0 ? '+' : ''}${s.count * (isBonus(s.rule) ? s.rule.points : -s.rule.points)}`,
   }))
   sheet(wb, 'Theo loại lỗi', ruleRows, [34, 15, 15, 15])
 

@@ -200,7 +200,7 @@ export default function LeaderView() {
     if (weekLocked) return notify('Tuần này đã chốt - không thể thêm.', 'error')
     const { studentId, ruleId, date } = form
     if (!studentId) return notify('Vui lòng chọn học sinh.', 'error')
-    if (!ruleId) return notify('Vui lòng chọn lỗi vi phạm.', 'error')
+    if (!ruleId) return notify('Vui lòng chọn lỗi vi phạm hoặc khen thưởng.', 'error')
     if (!date) return notify('Vui lòng chọn ngày.', 'error')
     const line = {
       id: editingLineId || `l-${Date.now()}`,
@@ -342,7 +342,7 @@ export default function LeaderView() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Thành viên" value={members.length} icon={Users} color="indigo" />
-        <StatCard label="Vi phạm đã duyệt (tuần)" value={periodScoring.length} icon={AlertTriangle} color={periodScoring.length ? 'rose' : 'emerald'} />
+        <StatCard label="Ghi nhận đã duyệt (tuần)" value={periodScoring.length} icon={AlertTriangle} color={periodScoring.length ? 'rose' : 'emerald'} />
         <StatCard label="Điểm TB" value={avgScore} icon={Trophy} color="amber" />
         <StatCard label="Điểm thay đổi tuần" value={`${periodDelta >= 0 ? '+' : ''}${periodDelta}`} icon={Lock} color={periodDelta >= 0 ? 'emerald' : 'rose'} />
       </div>
@@ -699,8 +699,8 @@ export default function LeaderView() {
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 p-4">
-          <h3 className="font-bold text-slate-800">Vi phạm đã duyệt gần đây trong {scopeLabel(scope)}</h3>
-          <p className="text-xs text-slate-400">Chỉ hiện các vi phạm đã được quản trị duyệt (đã tính điểm).</p>
+          <h3 className="font-bold text-slate-800">Vi phạm / khen thưởng đã duyệt gần đây trong {scopeLabel(scope)}</h3>
+          <p className="text-xs text-slate-400">Chỉ hiện các ghi nhận đã được quản trị duyệt (đã tính điểm).</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-sm">
@@ -717,7 +717,7 @@ export default function LeaderView() {
               {recent.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                    Chưa có vi phạm nào được duyệt.
+                    Chưa có ghi nhận nào được duyệt.
                   </td>
                 </tr>
               )}

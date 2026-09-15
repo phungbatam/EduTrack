@@ -106,7 +106,7 @@ function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap,
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="flex items-center gap-2 font-bold text-slate-800">
                 <AlertTriangle size={18} className="text-rose-500" />
-                Lịch sử vi phạm tuần {w.week}
+                Lịch sử ghi nhận tuần {w.week}
               </h3>
               {myGroup && (
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
@@ -120,8 +120,8 @@ function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap,
                 <thead>
                   <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
                     <th className="py-2.5 pr-3 font-semibold">Ngày</th>
-                    <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm</th>
-                    <th className="py-2.5 pr-3 font-semibold">Điểm bị trừ</th>
+                    <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm / khen thưởng</th>
+                    <th className="py-2.5 pr-3 font-semibold">Điểm</th>
                     <th className="py-2.5 pr-3 font-semibold">Ghi chú</th>
                     <th className="py-2.5 pr-3 font-semibold">Trạng thái</th>
                   </tr>
@@ -130,7 +130,7 @@ function WeekAccordion({ w, open, locked, myRow, myGroup, me, students, ruleMap,
                   {myWeekViolations.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-slate-400">
-                        Tuần này bạn không có vi phạm nào. Tuyệt vời!
+                        Tuần này bạn không có ghi nhận nào. Tuyệt vời!
                       </td>
                     </tr>
                   )}

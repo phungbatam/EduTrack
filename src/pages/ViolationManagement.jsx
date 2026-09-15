@@ -49,10 +49,10 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
   const submit = (e) => {
     e.preventDefault()
     if (!form.studentId) return onError('Vui lòng chọn học sinh.')
-    if (!form.ruleId) return onError('Vui lòng chọn lỗi vi phạm.')
-    if (!form.date) return onError('Vui lòng chọn ngày vi phạm.')
+    if (!form.ruleId) return onError('Vui lòng chọn lỗi vi phạm hoặc khen thưởng.')
+    if (!form.date) return onError('Vui lòng chọn ngày vi phạm / khen thưởng.')
     if (locked)
-      return onError(`Tuần này đã được chốt (${weekLabel(week)}). Không thể thêm/sửa vi phạm. Hãy mở khóa tuần trước.`)
+      return onError(`Tuần này đã được chốt (${weekLabel(week)}). Không thể thêm/sửa ghi nhận. Hãy mở khóa tuần trước.`)
     onSave(form)
   }
 
@@ -166,7 +166,7 @@ function ViolationForm({ initial, onSave, onCancel, onError }) {
           className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-indigo-700"
         >
           <Check size={16} />
-          {initial ? 'Cập nhật' : 'Ghi nhận vi phạm'}
+          {initial ? 'Cập nhật' : isBonus(rule) ? 'Ghi nhận khen thưởng' : rule ? 'Ghi nhận vi phạm' : 'Ghi nhận'}
         </button>
       </div>
     </form>
@@ -198,13 +198,13 @@ export default function ViolationManagement() {
   const selectedLocked = period.type === 'week' ? isWeekLocked({ year: period.year, week: period.week }) : false
 
   const handleLock = () => {
-    if (!window.confirm(`Xác nhận chốt ${weekLabel({ year: period.year, week: period.week })}?\n\nVi phạm tuần này sẽ được lưu làm bằng chứng và không thể sửa/xóa. Bạn có thể mở khóa lại khi cần.`)) return
+    if (!window.confirm(`Xác nhận chốt ${weekLabel({ year: period.year, week: period.week })}?\n\nGhi nhận tuần này sẽ được lưu làm bằng chứng và không thể sửa/xóa. Bạn có thể mở khóa lại khi cần.`)) return
     lockWeek(period.year, period.week)
-    notify(`Đã chốt ${weekLabel({ year: period.year, week: period.week })}. Vi phạm không thể sửa/xóa.`)
+    notify(`Đã chốt ${weekLabel({ year: period.year, week: period.week })}. Ghi nhận không thể sửa/xóa.`)
   }
 
   const handleUnlock = () => {
-    if (!window.confirm(`Mở khóa ${weekLabel({ year: period.year, week: period.week })}?\n\nVi phạm tuần này sẽ có thể sửa/xóa trở lại.`)) return
+    if (!window.confirm(`Mở khóa ${weekLabel({ year: period.year, week: period.week })}?\n\nGhi nhận tuần này sẽ có thể sửa/xóa trở lại.`)) return
     unlockWeek(period.year, period.week)
     notify('Đã mở khóa tuần.')
   }
@@ -238,6 +238,8 @@ export default function ViolationManagement() {
   }
 
   const handleSaveNew = (formData) => {
+    const rule = rules.find((r) => r.id === formData.ruleId)
+    const isBonusRule = isBonus(rule)
     addViolation({
       ...formData,
       id: `v-${Date.now()}`,
@@ -246,7 +248,11 @@ export default function ViolationManagement() {
       byId: session?.id || null,
       byRole: session?.role === 'admin' ? 'Giáo viên' : null,
     })
-    notify(`Đã ghi nhận vi phạm cho ${students.find((s) => s.id === formData.studentId)?.name || ''}.`)
+    notify(
+      `${isBonusRule ? 'Đã ghi nhận khen thưởng' : 'Đã ghi nhận vi phạm'} cho ${
+        students.find((s) => s.id === formData.studentId)?.name || ''
+      } (${isBonusRule ? `+${rule.points} điểm` : `-${rule.points} điểm`}).`,
+    )
     setFormKey((k) => k + 1)
   }
 
@@ -258,8 +264,8 @@ export default function ViolationManagement() {
             <Check size={18} />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800">Ghi nhận vi phạm mới</h3>
-            <p className="text-xs text-slate-400">Chọn học sinh → chọn lỗi → chọn ngày/tuần → ghi chú.</p>
+            <h3 className="font-bold text-slate-800">Ghi nhận vi phạm / khen thưởng</h3>
+            <p className="text-xs text-slate-400">Chọn học sinh → chọn lỗi vi phạm hoặc khen thưởng (+ điểm) → chọn ngày/tuần → ghi chú.</p>
           </div>
         </div>
         <ViolationForm
@@ -272,12 +278,12 @@ export default function ViolationManagement() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-slate-500">Vi phạm tuần này</p>
-          <p className="mt-1 text-2xl font-extrabold text-slate-800">{weekCount} lỗi</p>
+          <p className="text-xs text-slate-500">Ghi nhận tuần này</p>
+          <p className="mt-1 text-2xl font-extrabold text-slate-800">{weekCount} lỗi/việc</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-slate-500">Vi phạm trong kỳ lọc</p>
-          <p className="mt-1 text-2xl font-extrabold text-slate-800">{filtered.length} lỗi</p>
+          <p className="text-xs text-slate-500">Ghi nhận trong kỳ lọc</p>
+          <p className="mt-1 text-2xl font-extrabold text-slate-800">{filtered.length} lỗi/việc</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs text-slate-500">Điểm thay đổi (kỳ lọc)</p>
@@ -384,7 +390,7 @@ export default function ViolationManagement() {
               <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-400">
                 <th className="px-4 py-3 font-semibold">Ngày / Tuần</th>
                 <th className="px-4 py-3 font-semibold">Học sinh</th>
-                <th className="px-4 py-3 font-semibold">Lỗi vi phạm</th>
+                <th className="px-4 py-3 font-semibold">Lỗi vi phạm / khen thưởng</th>
                 <th className="px-4 py-3 font-semibold">Hình thức phạt</th>
                 <th className="px-4 py-3 font-semibold">Điểm</th>
                 <th className="px-4 py-3 font-semibold">Ghi chú</th>
@@ -396,7 +402,7 @@ export default function ViolationManagement() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
-                    Không có vi phạm nào trong kỳ này.
+                    Không có ghi nhận nào trong kỳ này.
                   </td>
                 </tr>
               )}

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { createSeedRules, createSeedStudents, createSeedViolations } from '../data/mockData.js'
-import { weekLabel, ACADEMIC_LEVELS, ACADEMIC_ORDER } from '../utils/helpers.js'
+import { weekLabel, isBonus, ACADEMIC_LEVELS, ACADEMIC_ORDER } from '../utils/helpers.js'
 import * as api from '../lib/api.js'
 
 const STORAGE_KEYS = {
@@ -609,7 +609,10 @@ export function AppProvider({ children }) {
       setViolations((p) => [v, ...p])
       const rule = rules.find((r) => r.id === v.ruleId)
       const stu = students.find((s) => s.id === v.studentId)
-      pushActivity('violation', `Ghi nhận vi phạm "${rule ? rule.name : ''}" cho ${stu ? stu.name : ''}`)
+      pushActivity(
+        'violation',
+        `${isBonus(rule) ? 'Ghi nhận khen thưởng' : 'Ghi nhận vi phạm'} "${rule ? rule.name : ''}" cho ${stu ? stu.name : ''}`,
+      )
     },
     [rules, students, pushActivity],
   )

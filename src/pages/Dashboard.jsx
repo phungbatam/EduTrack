@@ -97,7 +97,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Học sinh" value={students.length} icon={Users} color="indigo" hint="Toàn lớp" />
         <StatCard
-          label="Vi phạm trong kỳ"
+          label="Ghi nhận trong kỳ"
           value={filtered.length}
           icon={AlertTriangle}
           color="rose"
@@ -227,7 +227,7 @@ export default function Dashboard() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} className="text-rose-500" />
-            <h3 className="font-bold text-slate-800">Vi phạm mới nhất</h3>
+            <h3 className="font-bold text-slate-800">Vi phạm / khen thưởng mới nhất</h3>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -236,7 +236,7 @@ export default function Dashboard() {
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
                 <th className="py-2.5 pr-3 font-semibold">Ngày</th>
                 <th className="py-2.5 pr-3 font-semibold">Học sinh</th>
-                <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm</th>
+                <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm / khen thưởng</th>
                 <th className="py-2.5 pr-3 font-semibold">Điểm</th>
               </tr>
             </thead>
@@ -261,7 +261,7 @@ export default function Dashboard() {
               {!latestViolations.length && (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-slate-400">
-                    Không có vi phạm nào trong kỳ này.
+                    Không có ghi nhận nào trong kỳ này.
                   </td>
                 </tr>
               )}

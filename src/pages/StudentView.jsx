@@ -327,7 +327,7 @@ export default function StudentView() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <Bell size={18} className="text-sky-500" />
-            <h3 className="font-bold text-slate-800">Thông báo vi phạm mới nhất của lớp</h3>
+            <h3 className="font-bold text-slate-800">Thông báo vi phạm / khen thưởng mới nhất của lớp</h3>
           </div>
           <ul className="space-y-2.5">
             {notifications.map((v) => {
@@ -354,7 +354,7 @@ export default function StudentView() {
                 </li>
               )
             })}
-            {!notifications.length && <li className="py-8 text-center text-sm text-slate-400">Chưa có vi phạm nào.</li>}
+            {!notifications.length && <li className="py-8 text-center text-sm text-slate-400">Chưa có ghi nhận nào.</li>}
           </ul>
         </div>
       </div>
@@ -362,7 +362,7 @@ export default function StudentView() {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <AlertTriangle size={18} className="text-rose-500" />
-          <h3 className="font-bold text-slate-800">Lịch sử vi phạm của tôi ({periodLabel(period)})</h3>
+          <h3 className="font-bold text-slate-800">Lịch sử ghi nhận của tôi ({periodLabel(period)})</h3>
           {curSanction.type !== 'none' && (
             <div className="ml-auto flex flex-wrap gap-1.5">
               {curSanction.type === 'duty' && (
@@ -383,9 +383,9 @@ export default function StudentView() {
             <thead>
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
                 <th className="py-2.5 pr-3 font-semibold">Ngày</th>
-                <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm</th>
+                <th className="py-2.5 pr-3 font-semibold">Lỗi vi phạm / khen thưởng</th>
                 <th className="py-2.5 pr-3 font-semibold">Hình phạt</th>
-                <th className="py-2.5 pr-3 font-semibold">Điểm bị trừ</th>
+                <th className="py-2.5 pr-3 font-semibold">Điểm</th>
                 <th className="py-2.5 pr-3 font-semibold">Ghi chú</th>
                 <th className="py-2.5 pr-3 text-right font-semibold">Khiếu nại</th>
               </tr>
@@ -394,7 +394,7 @@ export default function StudentView() {
               {myViolations.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-slate-400">
-                    Bạn chưa có vi phạm nào trong kỳ này. Cố gắng nhé!
+                    Bạn chưa có ghi nhận nào trong kỳ này. Cố gắng nhé!
                   </td>
                 </tr>
               )}
